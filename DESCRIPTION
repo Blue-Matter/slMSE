@@ -1,16 +1,21 @@
 Package: slMSE
 Type: Package
-Title: What the Package Does (Title Case)
-Version: 0.1.0
+Title: Tools for the Simulation, Assessment and MSE for Short-Lived Species.  
+Version: 0.1.2
 Authors@R: c(
     person(
-      "Jane", "Doe",
-      email = "jane@example.com",
+      "Tom", "Carruthers",
+      email = "tom@bluematterscience.com",
       role = c("aut", "cre")
     )
   )
-Description: More about what it does (maybe more than one line).
-    Continuation lines should be indented.
-License: What license is it under?
+Description: support a scientific process that begins with a collection of available data and information, 
+    leads to the consolidation of those in a range of plausible scenarios for system dynamics, 
+    this followed by a defensible assessment of the resource, and finally the development and potentially 
+    adoption of management procedures that are demonstrably robust to scientific and management uncertainties.
+License: GNU-3
 Encoding: UTF-8
 LazyData: true
+Depends:
+  DT, openMSE, viridis
+RoxygenNote: 7.3.3
