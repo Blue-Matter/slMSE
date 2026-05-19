@@ -26,12 +26,16 @@
 #' @param Linf Positive real number or vector of positive real numbers nSim long. The asymptotic length.
 #' @param K Positive real number or vector of positive real numbers nSim long. The somatic growth rate (von B.) per season.
 #' @param t0 Negative real number or vector of negative real numbers nSim long. The theoretical length at age (seasonal) zero.
+#' @param Len_age Vector of positive real numbers, nages long. The Length at age.
 #' @param Len_CV Positive real number. The coefficient of variation of length at age. Typically between 0.05 and 0.25.
 #' @param a Positive real number. Weight (W) at length (L) parameter a. W = aL^b. Converts units of length to weight.
 #' @param b Positive real number. Weight (W) at length (L) parameter b. W = aL^b. Typically approximately cubic (3-ish)
+#' @param Wt_age Vector of positive real numbers, nages long. The weight at age.
 #' @param M Positive real number or vector of positive real numbers nSim long. The instantaneous rate of natural mortality per season.
 #' @param amat50 Positive real number or vector of positive real numbers nSim long. The age (in seasons) that 50% of individuals are mature, in a logistic maturity model. E.g., 6 in a monthly model would be 50% mature after 6 months.
 #' @param amatSLP Positive real number or vector of positive real numbers nSim long. The slope of the logistic maturity model. E.g., 2 in a monthly model.
+#' @param Mat_age Vector of positive real numbers, nages long. The spawning fraction ('maturity') at age.
+#' @param SR_type Character string. The type of stock recruitment relationship e.g., BevertonHolt', 'Ricker'
 #' @param h Positive real number or vector of positive real numbers nSim long. Steepness of the stock-recruitment relationship (Bev-Holt)
 #' @param sigmaR Positive real number or vector of positive real numbers nSim long. The lognormal standard deviation in recruitment deviations.
 #' @param trunc_sigmaR Positive real number. The number of standard deviations to truncate recruitment deviations. E.g., 2 resamples recruitment deviations if over two standard deviations from the mean (upper tail q of 1.96).
@@ -51,9 +55,11 @@ slStock = function(Name = "A short-lived creature", Species = "Shortus liveus", 
                          nYear = 10, pYear = 10, Seasons = 12, CurrentYear = 2026, nSim = 4,
                          rec_age = 1, nages = 24, PlusGroup = F,
                          spawndist = c(0, 0, 0.1, 0.5, 0.3, 0.2, 0, 0, 0, 0, 0, 0),
-                         Linf = 1, K = 0.2, t0 = 0, Len_CV = 0.2, a = 1E-5, b = 3,
+                         Linf = 1, K = 0.2, t0 = 0, Len_CV = 0.2, Len_age = NA,
+                         a = 1E-5, b = 3, Wt_age = NA,
                          M = 0.2, amat50 = 6, amatSLP = 2,
-                         h = 0.9, sigmaR = 1.0, trunc_sigmaR = 2.0, R_AC = 0.5, R0 = 1E6,
+                         Mat_age = NA,
+                         SR_type = "BevertonHolt", h = 0.9, sigmaR = 1.0, trunc_sigmaR = 2.0, R_AC = 0.5, R0 = 1E6,
                          nareas = 2, Frac_area = matrix(c(0.95,0.9,0.85,0.8,0.75,0.7,0.65,0.6,0.55,0.5,0.5,0.5,0.45,0.4,0.35,0.3,0.25,0.2,0.15,0.1,0.05,0.01,0.01,0.01),nrow=1),
                          prob_stay = 0.9){
 
@@ -63,10 +69,8 @@ slStock = function(Name = "A short-lived creature", Species = "Shortus liveus", 
   # Linf = 1; K = 0.2; t0 = 0; Len_CV = 0.2; a = 1; b = 3; M = 0.2; amat50 = 6; amatSLP = 2;
   # h = 0.9; R0 = 1E6, sigmaR = 1.0; trunc_sigmaR = 2.0; R_AC = 0.5; nareas = 2;  prob_stay = 0.9
   # prob_stay = 0.9; Frac_area = matrix(c(0.95,0.9,0.85,0.8,0.75,0.7,0.65,0.6,0.55,0.5,0.5,0.5,0.45,0.4,0.35,0.3,0.25,0.2,0.15,0.1,0.05,0.01,0.01,0.01),nrow=1)
-
-
-
   # pre calcs
+
   na = nages - rec_age + 1
 
   stock = new('stock')
@@ -90,6 +94,7 @@ slStock = function(Name = "A short-lived creature", Species = "Shortus liveus", 
   #Length@Model = "vonBert"
   #Length@Pars = list(Linf = rep(Linf,2), K = rep(K, 2), t0 = rep(t0, 2))
   Length@MeanAtAge = Linf * 1-exp(-K * ((rec_age:nages)-t0))
+  if(!is.na(Len_age[1]))  Length@MeanAtAge = Len_age
   Length@Units = "mm"
   Length@CVatAge = rep(Len_CV, na)
   Length@Dist = "normal"
@@ -101,6 +106,7 @@ slStock = function(Name = "A short-lived creature", Species = "Shortus liveus", 
   #Weight@Model = ExampleOM@Stock@Weight@Model #   NULL #MSEtool::WeightatMeanLength()
   #Weight@Pars = list(alpha = a, beta = b)
   Weight@MeanAtAge = a * Length@MeanAtAge ^ b
+  if(!is.na(Wt_age[1]))  Length@MeanAtAge = Wt_age
   Weight@Units = "g"
   Weight@Dist = "lognormal"
   Weight@TruncSD = 2
@@ -112,19 +118,21 @@ slStock = function(Name = "A short-lived creature", Species = "Shortus liveus", 
   # Maturity
   avec = ((rec_age : nages)-amat50) * amatSLP
   atrans = exp(avec)/(1+exp(avec))
+  if(is.na(Mat_age[1])) atrans = Mat_age
   amat = array(rep(atrans,each=nSim),c(nSim,na,nYear*Seasons+pYear*Seasons))
-
   stock@Maturity = Maturity(MeanAtAge = amat)
   #stock@Maturity = Maturity(Pars = list(L50 = amat50, L50_95 = amat50/10))
 
+  # Fecundity slot for spawndist
+
 
   # Stock-Recruitment
-  stock@SRR = SRR(Model = "BevertonHolt", Pars = list(h = h), R0 = R0, SD = sigmaR, AC = R_AC, TruncSD = trunc_sigmaR)
+  stock@SRR = SRR(Model = SR_type, Pars = list(h = h), R0 = R0, SD = sigmaR, AC = R_AC, TruncSD = trunc_sigmaR)
 
   # Spatial
   # nSim, nArea, nArea, nAge, and nTS,
   Movement = array(0,c(1,nareas,nareas,na,1))
-  dist1 = c(Frac_area[,1],1-sum(Frac_area[,1]))
+  dist1 = Frac_area[,1]
   Movement[1,,,1,1] = matrix(dist1,ncol=nareas,nrow=nareas,byrow=T) # Initial movement is fully mixed
   for(aa in 2:na){
     fracsin = c(Frac_area[,aa-1],1-sum(Frac_area[,aa-1]))
@@ -169,6 +177,7 @@ slStock_check = function(stock){
 #' @param Effort A matrix of positive real numbers nSim x time steps (nYear x Seasons). Given a default q value of 1 this is the apical fishing mortality rate. Defaul is 'NA' and in this case effort pattern is simulated with a seasonal and temporal trend.
 #' @param sel50 Positive real number. The age (in seasons) that 50% of individuals are selected, in a logistic selectivity model. E.g., 6 in a monthly model would be 50% selected after 6 months.
 #' @param selSLP Positive real number. The slope of the logistic selectivity model. E.g., 2 in a monthly model.
+#' @param plot Boolean. Should plots be presented on the creation of the fleet object.
 #' @return An object of MSEtool class fleet
 #' @author T. Carruthers
 #' @examples
@@ -177,7 +186,8 @@ slStock_check = function(stock){
 #' @seealso \link{slFleet} for making a short-lived stock object and \link{slOM} for specifying the entire operating model from fleet and stock objects.
 #' @export
 slFleet = function(Name = "A fleet", nYear = 10, pYear = 10, Seasons = 12, CurrentYear = 2026,
-                         nSim = 4, rec_age = 1, nages = 24, Effort = NA, sel50 = 6, selSLP = 2){
+                         nSim = 4, rec_age = 1, nages = 24, Effort = NA, sel50 = 6, selSLP = 2,
+                         plot = F){
 
   # Default args for testing:
   # Name = "A fleet"; nYear = 10; pYear = 10; Seasons = 12; nArea = CurrentYear = 2026; nSim = 4; rec_age = 4; nages = 24; Effort = NA;
@@ -193,8 +203,9 @@ slFleet = function(Name = "A fleet", nYear = 10, pYear = 10, Seasons = 12, Curre
   fleet@nSim = nSim
 
   if(class(Effort)!="array"){
-    Effort = Effort_sim(nSim, nYear, Seasons, nArea, ymin = 0.25, yfac = 0.5, ECV = 0.15, maxF = 0.1, plot=T)
+    Effort = Effort_sim(nSim, nYear, Seasons, nArea, ymin = 0.25, yfac = 0.5, ECV = 0.15, maxF = 0.1, plot=plot)
   }
+
   fleet@Effort = Effort(Effort=Effort)
 
   fleet@Catchability = Catchability(Efficiency = 1)
@@ -270,6 +281,10 @@ slOM = function(Name = "Short-lived simulation", Agency = "A fishery agency", Au
   om@Interval = Interval
   om@Seed = Seed
 
+  #data = new('data')
+  #data@YearLH = CurrentYear
+  #om@Data=data
+
   # Observation model --------------------------------------------------------------
 
   #obs = Obs()
@@ -303,9 +318,6 @@ slOM = function(Name = "Short-lived simulation", Agency = "A fishery agency", Au
   class(sfl[['Astock']]) = "FleetList"
   sfl$Astock$Fleet1 = fleet
   om@Fleet = sfl
-
-
-
   # hist = Simulate(om)
 
   om

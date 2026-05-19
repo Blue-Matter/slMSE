@@ -1,7 +1,7 @@
 Package: slMSE
 Type: Package
 Title: Tools for the Simulation, Assessment and MSE for Short-Lived Species.  
-Version: 0.1.2
+Version: 0.1.5
 Authors@R: c(
     person(
       "Tom", "Carruthers",
