@@ -52,23 +52,25 @@
 #' @seealso \link{slFleet} for making a short-lived fleet object and \link{slOM} for specifying the entire operating model from fleet and stock objects.
 #' @export
 slStock = function(Name = "A short-lived creature", Species = "Shortus liveus", CommonName = "Short-lived creature",
-                         nYear = 10, pYear = 10, Seasons = 12, CurrentYear = 2026, nSim = 4,
-                         rec_age = 1, nages = 24, PlusGroup = F,
-                         spawndist = c(0, 0, 0.1, 0.5, 0.3, 0.2, 0, 0, 0, 0, 0, 0),
-                         Linf = 1, K = 0.2, t0 = 0, Len_CV = 0.2, Len_age = NA,
-                         a = 1E-5, b = 3, Wt_age = NA,
-                         M = 0.2, amat50 = 6, amatSLP = 2,
-                         Mat_age = NA,
-                         SR_type = "BevertonHolt", h = 0.9, sigmaR = 1.0, trunc_sigmaR = 2.0, R_AC = 0.5, R0 = 1E6,
-                         nareas = 2, Frac_area = matrix(c(0.95,0.9,0.85,0.8,0.75,0.7,0.65,0.6,0.55,0.5,0.5,0.5,0.45,0.4,0.35,0.3,0.25,0.2,0.15,0.1,0.05,0.01,0.01,0.01),nrow=1),
-                         prob_stay = 0.9){
+                   nYear = 10, pYear = 10, Seasons = 12, CurrentYear = 2026, nSim = 4,
+                   rec_age = 1, nages = 24, PlusGroup = F,
+                   spawndist = c(0, 0, 0.1, 0.5, 0.3, 0.2, 0, 0, 0, 0, 0, 0),
+                   Linf = 1, K = 0.2, t0 = 0, Len_CV = 0.2, Len_age = NA,
+                   a = 1E-5, b = 3, Wt_age = NA,
+                   M = 0.2, amat50 = 6, amatSLP = 2,
+                   Mat_age = NA,
+                   SR_type = "BevertonHolt", h = 0.9, sigmaR = 1.0, trunc_sigmaR = 2.0, R_AC = 0.5, R0 = 1E6,
+                   nareas = 2, Frac_area = matrix(c(0.95,0.9,0.85,0.8,0.75,0.7,0.65,0.6,0.55,0.5,0.5,0.5,0.45,0.4,0.35,0.3,0.25,0.2,0.15,0.1,0.05,0.01,0.01,0.01,
+                                                    0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.5,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.99,0.99,0.99),byrow=T,nrow=2),
+                   prob_stay = 0.9){
 
   # Default args for testing:
   # Name = "A short-lived creature"; Species = "Shortus liveus"; CommonName = "Short-lived creature"
   # nYear = 10; pYear = 10; Seasons = 12; CurrentYear = 2026; nSim = 4; rec_age = 1; nages = 24; PlusGroup = F
   # Linf = 1; K = 0.2; t0 = 0; Len_CV = 0.2; a = 1; b = 3; M = 0.2; amat50 = 6; amatSLP = 2;
-  # h = 0.9; R0 = 1E6, sigmaR = 1.0; trunc_sigmaR = 2.0; R_AC = 0.5; nareas = 2;  prob_stay = 0.9
-  # prob_stay = 0.9; Frac_area = matrix(c(0.95,0.9,0.85,0.8,0.75,0.7,0.65,0.6,0.55,0.5,0.5,0.5,0.45,0.4,0.35,0.3,0.25,0.2,0.15,0.1,0.05,0.01,0.01,0.01),nrow=1)
+  # h = 0.9; R0 = 1E6; sigmaR = 1.0; trunc_sigmaR = 2.0; R_AC = 0.5; nareas = 2;  prob_stay = 0.9
+  # Frac_area = matrix(c(0.95,0.9,0.85,0.8,0.75,0.7,0.65,0.6,0.55,0.5,0.5,0.5,0.45,0.4,0.35,0.3,0.25,0.2,0.15,0.1,0.05,0.01,0.01,0.01, 0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.5,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.99,0.99,0.99),nrow=2,byrow=T)
+  # Len_age = NA; Wt_age = NA; Mat_age = NA; SR_type = "BevertonHolt"
   # pre calcs
 
   na = nages - rec_age + 1
@@ -118,7 +120,7 @@ slStock = function(Name = "A short-lived creature", Species = "Shortus liveus", 
   # Maturity
   avec = ((rec_age : nages)-amat50) * amatSLP
   atrans = exp(avec)/(1+exp(avec))
-  if(is.na(Mat_age[1])) atrans = Mat_age
+  if(!is.na(Mat_age[1])) atrans = Mat_age
   amat = array(rep(atrans,each=nSim),c(nSim,na,nYear*Seasons+pYear*Seasons))
   stock@Maturity = Maturity(MeanAtAge = amat)
   #stock@Maturity = Maturity(Pars = list(L50 = amat50, L50_95 = amat50/10))
@@ -135,8 +137,8 @@ slStock = function(Name = "A short-lived creature", Species = "Shortus liveus", 
   dist1 = Frac_area[,1]
   Movement[1,,,1,1] = matrix(dist1,ncol=nareas,nrow=nareas,byrow=T) # Initial movement is fully mixed
   for(aa in 2:na){
-    fracsin = c(Frac_area[,aa-1],1-sum(Frac_area[,aa-1]))
-    fracsout = c(Frac_area[,aa],1-sum(Frac_area[,aa]))
+    fracsin = Frac_area[,aa-1]
+    fracsout = Frac_area[,aa]
     movout = get_mov_D(fracsin, fracsout, prob = rep(prob_stay,nareas))
     Movement[1,,,aa,1] = movout$mov
   }
@@ -157,192 +159,8 @@ slStock_check = function(stock){
 
 }
 
-#' Make a Short-Lived Species Fleet Object
-#'
-#' A function that builds the fleet component of an operating model for a short-lived species. Requires from
-#' specifications for growth, stock-recruitment, natural mortality rate and spatial distribution. This
-#' is a wrapper function and produces a fully customizable MSEtool object of class 'stock'. You can edit
-#' that object to include very complex stock dynamics if desired.
-#'
-#' @param Name Character string. The name of the stock object. E.g., "North Pacific Neon Flying Squid"
-#' @param Species Character string. The genus and species. E.g., "Ommastrephes bartramii"
-#' @param CommonName Character string. The common name. E.g., "Neon Flying Squid"
-#' @param nYear Positive Integer. The number of historical years. E.g., 10, (2015 - 2024)
-#' @param pYear  Positive Integer. The number of projection years. E.g., 10 (2025 - 2034)
-#' @param Seasons Positive Integer. The number of sub-year time steps. E.g., 12 for a monthly model
-#' @param CurrentYear Integer. The Calendar year of the last historical year. E.g. 2024.
-#' @param nSim Positive Integer. The number of independent simulations. E.g., 4 for testing, 24 for preliminary results, 48 for representative results, 192+ for informing management.
-#' @param rec_age Positive Integer. The age the fish is recruited (in seasonal time steps). E.g., given a monthly model (Seasons = 12) a value of 4 means that the stock recruitment function calculates recruiment into the time step 4 months later.
-#' @param nages Positive Integer. The number of seasonal time steps that population dynamics will be calculated for. E.g., 24 would be two years in a monthly model. Note that this only necessary if creatures live that long or dynamics are not suitably approximated with a plus group.
-#' @param Effort A matrix of positive real numbers nSim x time steps (nYear x Seasons). Given a default q value of 1 this is the apical fishing mortality rate. Defaul is 'NA' and in this case effort pattern is simulated with a seasonal and temporal trend.
-#' @param sel50 Positive real number. The age (in seasons) that 50% of individuals are selected, in a logistic selectivity model. E.g., 6 in a monthly model would be 50% selected after 6 months.
-#' @param selSLP Positive real number. The slope of the logistic selectivity model. E.g., 2 in a monthly model.
-#' @param plot Boolean. Should plots be presented on the creation of the fleet object.
-#' @return An object of MSEtool class fleet
-#' @author T. Carruthers
-#' @examples
-#' A_short_lived_fleet<- slFleet("Default fleet values for demo")
-#' class(A_short_lived_fleet)
-#' @seealso \link{slFleet} for making a short-lived stock object and \link{slOM} for specifying the entire operating model from fleet and stock objects.
-#' @export
-slFleet = function(Name = "A fleet", nYear = 10, pYear = 10, Seasons = 12, CurrentYear = 2026,
-                         nSim = 4, rec_age = 1, nages = 24, Effort = NA, sel50 = 6, selSLP = 2,
-                         plot = F){
 
-  # Default args for testing:
-  # Name = "A fleet"; nYear = 10; pYear = 10; Seasons = 12; nArea = CurrentYear = 2026; nSim = 4; rec_age = 4; nages = 24; Effort = NA;
-  # sel50 = 6; selSLP = 2
-
-  fleet = Fleet()
-  fleet@Name = Name
-  fleet@nYear = nYear
-  fleet@pYear = pYear
-  fleet@CurrentYear = CurrentYear
-  fleet@Years = CurrentYear+ (-(nYear-1):pYear)
-  fleet@Seasons = Seasons
-  fleet@nSim = nSim
-
-  if(class(Effort)!="array"){
-    Effort = Effort_sim(nSim, nYear, Seasons, nArea, ymin = 0.25, yfac = 0.5, ECV = 0.15, maxF = 0.1, plot=plot)
-  }
-
-  fleet@Effort = Effort(Effort=Effort)
-
-  fleet@Catchability = Catchability(Efficiency = 1)
-
-  svec = ((rec_age : nages)-sel50)*selSLP
-  fleet@Selectivity = Selectivity(MeanAtAge = exp(svec)/(1+exp(svec)))
-
-  # Optional slots:
-  # Distribution - only needed if you don't want openMSE to solve the distribution according to vulnerable biomass
-
-  fleet
-
-}
-
-SL_fleet_check = function(fleet){
-  # fleet spec checks
-
-}
-
-#' Construct Complete Short-Lived Species Operating Model
-#'
-#' A function that combines stock and fleet object in a complete operating model for a short-lived species. Can
-#' include lists of fleets and stocks for more complex operating models
-#'
-#' @param Name Character string. The name of the operating model. E.g., "NP NFS Ref OM #3: high M, high h, low rec"
-#' @param Agency Character string. The relevant fishery agency "North Pacific Fishery Council (NPFC)"
-#' @param Author Character string. Name of the author(s) of the operating model E.g., "A. Person"
-#' @param Email Character string. Email address of the corresponding author
-#' @param Region Character string. The location of the stock / management area.
-#' @param Latitude Real number. Degrees N. Negative is southern hemisphere
-#' @param Longitude Real number. Degrees E. Negative is western hemisphere
-#' @param Sponsor Character string. The name of the person(s) or organization(s) that paid for the research.
-#' @param nSim Positive Integer. The number of independent simulations. E.g., 4 for testing, 24 for preliminary results, 48 for representative results, 192+ for informing management.
-#' @param nYear Positive Integer. The number of historical years. E.g., 10, (2015 - 2024)
-#' @param pYear  Positive Integer. The number of projection years. E.g., 10 (2025 - 2034)
-#' @param Seasons Positive Integer. The number of sub-year time steps. E.g., 12 for a monthly model
-#' @param CurrentYear Integer. The Calendar year of the last historical year. E.g. 2024.
-#' @param Interval Positive integer. The management interval (in seasons) - how frequently is new advice provided. In a monthly model, a value of 6 would mean every 6 months after June and December.
-#' @param Seed Real number. The seed for sampling of random variables.
-#' @param stock A stock object or list of stock objects
-#' @param fleet A fleet object or list of fleet objects
-#' @return An object of MSEtool class om
-#' @author T. Carruthers
-#' @examples
-#' A_short_lived_om <- slOM("Default fleet values for demo")
-#' class(A_short_lived_om)
-#' @seealso \link{slStock} for making a short-lived stock object and \link{slFleet} for making a short-lived fleet object.
-#' @export
-slOM = function(Name = "Short-lived simulation", Agency = "A fishery agency", Author = "A fishery analyst",
-                 Email = "a.person@email.com", Region = "A fishery management area", Latitude = NA, Longitude = NA,
-                 Sponsor = "A generous funder", nSim = 4, nYear = 10, pYear = 10, Seasons = 12, CurrentYear = 2026,
-                 Interval = 6, Seed = 1, stock = NA, fleet = NA){
-
-  #  Name = "Short-lived simulation"; Agency = "A fishery agency"; Author = "A fishery analyst"; Email = "a.person@email.com"; Region = "A fishery management area"; Latitude = NA; Longitude = NA
-  #  Sponsor = "A generous funder"; nSim = 4; nYear = 10; pYear = 10; Seasons = 12; CurrentYear = 2026; Interval = 6; Seed = 1
-
-  om = new('om')     # Operating model object
-
-  # Dimensions and labels
-  om@Name = Name
-  om@Agency = Agency
-  om@Author = Author
-  om@Email = "An email address"
-  om@Region = "A region"
-  om@Latitude = 0
-  om@Longitude = 0
-  om@Sponsor = "A sponsor"
-  om@nSim = nSim
-  om@nYear = nYear
-  om@pYear = pYear
-  om@CurrentYear = CurrentYear
-  om@Seasons = Seasons
-  om@Interval = Interval
-  om@Seed = Seed
-
-  #data = new('data')
-  #data@YearLH = CurrentYear
-  #om@Data=data
-
-  # Observation model --------------------------------------------------------------
-
-  #obs = Obs()
-  #obs@Landings@CV = 0.025
-  #obs@Survey@CV = 0.1
-  #obs@CAL@ESS = 200
-  #om@Obs = obs
-
-  # Implementation model -----------------------------------------------------------
-
-  #imp = Imp()
-  #imp@TAC@Mean=1
-  #imp@TAC@SD = 0.001
-  #om@Imp = imp
-
-  # Populate stock and fleet slots -------------------------------------------------
-
-  if(!(class(stock)%in%c("list","stock")))stock = slStock()
-  if(!(class(fleet)%in%c("list","fleet")))fleet = slFleet()
-
-  om@Stock = stock
-  om@Fleet = fleet
-  om = Populate(om)
-
-
-  list("Astock" = stock)
-  class(om@Stock) = "StockList"
-
-  sfl = list(); class(sfl) = "StockFleetList"
-  sfl[['Astock']] = list()
-  class(sfl[['Astock']]) = "FleetList"
-  sfl$Astock$Fleet1 = fleet
-  om@Fleet = sfl
-  # hist = Simulate(om)
-
-  om
-
-}
-
-slOM_check=function(){
-  # om spec checks
-
-}
-
-# Invent Effort
-
-Effort_sim = function(nSim, nYear, Seasons, nArea, ymin = 0.25, yfac = 0.5, ECV = 0.15, maxF = 0.1, plot=F){
-  nt =  nYear*Seasons
-  Effort = array(0,c(nSim,nt))
-  ye = 1 + ymin + (sin(((9+1:(nYear))/3))*1)
-  se = dnorm(1:Seasons,Seasons/2,Seasons/5)
-  seind = t(array(1:Seasons,c(nt,nSim)))
-  yind = t(array(rep(1:nYear,each=Seasons),c(nt,nSim)))
-  Effort[] = ye[yind] * se[seind] * trlnorm(nt*nSim,1,ECV)
-  Effort = Effort / apply(Effort,1,max) * maxF
-  if(plot)matplot(t(Effort),type="l",lty=1)
-  Effort
-}
+# === Stock Internal ================================================================================
 
 
 dograv2 = function(log_visc,log_grav,fracsin){
@@ -400,5 +218,9 @@ get_mov_D <- function(fracsin = c(0.1, 0.2, 0.3, 0.4), fracsout = c(0.4,0.3,0.2,
   out$predprobs = diag(mov)
   out
 }
+
+
+
+
 
 
