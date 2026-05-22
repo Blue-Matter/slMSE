@@ -69,9 +69,9 @@ slOM = function(Name = "Short-lived simulation", Agency = "A fishery agency", Au
   om@Obs = obs
 
   om = Populate(om)
-  #m@Fleet <- Extend(om@Fleet, nSim = om@nSim)
+  om@Fleet <- Extend(om@Fleet, nSim = om@nSim)
 
-  list("Astock" = stock)
+  #list("Astock" = stock)
   class(om@Stock) = "StockList"
 
   sfl = list(); class(sfl) = "StockFleetList"
@@ -79,8 +79,7 @@ slOM = function(Name = "Short-lived simulation", Agency = "A fishery agency", Au
   class(sfl[['Astock']]) = "FleetList"
   sfl$Astock$Fleet1 = fleet
   om@Fleet = sfl
-  # hist = Simulate(om)
-
+ 
   om
 
 }
