@@ -44,6 +44,7 @@
 #' @param nareas Positive real number. The number of spatial areas. Should match the spec of Frac_area which has nareas-1 rows.
 #' @param Frac_area Matrix of fractions nareas-1 x nages. The fraction of stock numbers found in each area by age. Frac_area[1,3] = 0.9 means that 90 percent of individuals of age 3 are found in area 1.
 #' @param prob_stay Fraction. The tendency for individuals to remain in the same area among seasonal time steps. Using gravity equations, the function optimizes for movement that obtains Frac_area while staying as close to prob_stay as possible.
+#' @param depletn Imperfect fraction. The stock biomass in last time step relative to initial time step
 #' @return An object of MSEtool class stock
 #' @author T. Carruthers
 #' @examples
@@ -62,22 +63,26 @@ slStock = function(Name = "A short-lived creature", Species = "Shortus liveus", 
                    SR_type = "BevertonHolt", h = 0.9, sigmaR = 1.0, trunc_sigmaR = 2.0, R_AC = 0.5, R0 = 1E6,
                    nareas = 2, Frac_area = matrix(c(0.95,0.9,0.85,0.8,0.75,0.7,0.65,0.6,0.55,0.5,0.5,0.5,0.45,0.4,0.35,0.3,0.25,0.2,0.15,0.1,0.05,0.01,0.01,0.01,
                                                     0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.5,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.99,0.99,0.99),byrow=T,nrow=2),
-                   prob_stay = 0.9){
+                   prob_stay = 0.9,
+                   depletn = 0.5){
 
   # Default args for testing:
   # Name = "A short-lived creature"; Species = "Shortus liveus"; CommonName = "Short-lived creature"
   # nYear = 10; pYear = 10; Seasons = 12; CurrentYear = 2026; nSim = 4; rec_age = 1; nages = 24; PlusGroup = F
   # Linf = 1; K = 0.2; t0 = 0; Len_CV = 0.2; a = 1; b = 3; M = 0.2; amat50 = 6; amatSLP = 2;
+  # spawndist = c(0, 0, 0.1, 0.5, 0.3, 0.2, 0, 0, 0, 0, 0, 0)
   # h = 0.9; R0 = 1E6; sigmaR = 1.0; trunc_sigmaR = 2.0; R_AC = 0.5; nareas = 2;  prob_stay = 0.9
   # Frac_area = matrix(c(0.95,0.9,0.85,0.8,0.75,0.7,0.65,0.6,0.55,0.5,0.5,0.5,0.45,0.4,0.35,0.3,0.25,0.2,0.15,0.1,0.05,0.01,0.01,0.01, 0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.5,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.99,0.99,0.99),nrow=2,byrow=T)
   # Len_age = NA; Wt_age = NA; Mat_age = NA; SR_type = "BevertonHolt"
+  # depletn = 0.5
   # pre calcs
 
-  na = nages - rec_age + 1
 
   stock = new('stock')
 
-  # Names and dimensions
+  # --- Names and dimensions ---------------------------------------------------
+
+  na = nages - rec_age + 1
   stock@Name = Name
   stock@Species = Species
   stock@CommonName = CommonName
@@ -88,13 +93,13 @@ slStock = function(Name = "A short-lived creature", Species = "Shortus liveus", 
   stock@Seasons = Seasons
   stock@nSim = nSim
 
-  # Ages
+  # --- Ages -------------------------------------------------------------------
+
   stock@Ages = Ages(MaxAge = nages, MinAge = rec_age, Units = "month", PlusGroup = F)
 
-  # Length
+  # --- Length -----------------------------------------------------------------
+
   Length = new('length')
-  #Length@Model = "vonBert"
-  #Length@Pars = list(Linf = rep(Linf,2), K = rep(K, 2), t0 = rep(t0, 2))
   Length@MeanAtAge = Linf * 1-exp(-K * ((rec_age:nages)-t0))
   if(!is.na(Len_age[1]))  Length@MeanAtAge = Len_age
   Length@Units = "mm"
@@ -103,10 +108,9 @@ slStock = function(Name = "A short-lived creature", Species = "Shortus liveus", 
   Length@TruncSD = 2
   stock@Length = Length
 
-  # Weight
+  # --- Weight------------------------------------------------------------------
+
   Weight = new('weight')
-  #Weight@Model = ExampleOM@Stock@Weight@Model #   NULL #MSEtool::WeightatMeanLength()
-  #Weight@Pars = list(alpha = a, beta = b)
   Weight@MeanAtAge = a * Length@MeanAtAge ^ b
   if(!is.na(Wt_age[1]))  Length@MeanAtAge = Wt_age
   Weight@Units = "g"
@@ -114,26 +118,34 @@ slStock = function(Name = "A short-lived creature", Species = "Shortus liveus", 
   Weight@TruncSD = 2
   stock@Weight = Weight
 
-  # Natural Mortality
+  # --- Natural Mortality ------------------------------------------------------
+
   stock@NaturalMortality = NaturalMortality(MeanAtAge = rep(M,na))
 
-  # Maturity
+  # --- Maturity ---------------------------------------------------------------
+
   avec = ((rec_age : nages)-amat50) * amatSLP
   atrans = exp(avec)/(1+exp(avec))
   if(!is.na(Mat_age[1])) atrans = Mat_age
   amat = array(rep(atrans,each=nSim),c(nSim,na,nYear*Seasons+pYear*Seasons))
   stock@Maturity = Maturity(MeanAtAge = amat)
-  #stock@Maturity = Maturity(Pars = list(L50 = amat50, L50_95 = amat50/10))
 
-  # Fecundity slot for spawndist
+  # --- Fecundity slot for spawndist -------------------------------------------
 
+  fec = amat
+  find = MSEtool:::TEG(dim(fec))
+  sind = rep(spawndist,1000)[1:dim(fec)[3]]
+  sind[1] = 0
+  fec[find] = fec[find]*sind[find[,3]]*Weight@MeanAtAge[find[,2]]
+  stock@Fecundity=Fecundity(MeanAtAge = fec)
 
-  # Stock-Recruitment
+  # --- Stock-Recruitment ------------------------------------------------------
+
   stock@SRR = SRR(Model = SR_type, Pars = list(h = h), R0 = R0, SD = sigmaR, AC = R_AC, TruncSD = trunc_sigmaR)
 
-  # Spatial
-  # nSim, nArea, nArea, nAge, and nTS,
-  Movement = array(0,c(1,nareas,nareas,na,1))
+  # --- Spatial ----------------------------------------------------------------
+
+  Movement = array(0,c(1,nareas,nareas,na,1)) # nSim, nArea, nArea, nAge, and nTS,
   dist1 = Frac_area[,1]
   Movement[1,,,1,1] = matrix(dist1,ncol=nareas,nrow=nareas,byrow=T) # Initial movement is fully mixed
   for(aa in 2:na){
@@ -142,13 +154,12 @@ slStock = function(Name = "A short-lived creature", Species = "Shortus liveus", 
     movout = get_mov_D(fracsin, fracsout, prob = rep(prob_stay,nareas))
     Movement[1,,,aa,1] = movout$mov
   }
-  stock@Spatial = Spatial(Movement=Movement)
+  stock@Spatial = Spatial(Movement=Movement, RelativeSize = rep(1/nareas,nareas))
 
-  # Optional slots:
-  # Fecundity - assumes proportional to SBiomass if left empty
-  # Spatial - leave empty if no spatial structure
-  # Depletion - leave empty if you don't need to optimize q for specific depeltion
-  # Fleet - Retention: don't need it if all retained
+  # --- Depletion --------------------------------------------------------------
+
+  #if(length(depletn) == 1) depletn = rep(depletn, nSim)
+  #stock@Depletion = Depletion(Final = depletn)
 
   stock
 }
@@ -162,6 +173,7 @@ slStock_check = function(stock){
 
 # === Stock Internal ================================================================================
 
+# --- Spatial ------------------------------------------------------------------
 
 dograv2 = function(log_visc,log_grav,fracsin){
   log_grav_1 = c(0,log_grav)
