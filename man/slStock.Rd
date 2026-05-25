@@ -40,7 +40,8 @@ slStock(
     0.45, 0.4, 0.35, 0.3, 0.25, 0.2, 0.15, 0.1, 0.05, 0.01, 0.01, 0.01, 0.05, 0.1, 0.15,
     0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.5, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8,
     0.85, 0.9, 0.95, 0.99, 0.99, 0.99), byrow = T, nrow = 2),
-  prob_stay = 0.9
+  prob_stay = 0.9,
+  depletn = 0.5
 )
 }
 \arguments{
@@ -109,6 +110,8 @@ slStock(
 \item{Frac_area}{Matrix of fractions nareas-1 x nages. The fraction of stock numbers found in each area by age. Frac_area[1,3] = 0.9 means that 90 percent of individuals of age 3 are found in area 1.}
 
 \item{prob_stay}{Fraction. The tendency for individuals to remain in the same area among seasonal time steps. Using gravity equations, the function optimizes for movement that obtains Frac_area while staying as close to prob_stay as possible.}
+
+\item{depletn}{Imperfect fraction. The stock biomass in last time step relative to initial time step}
 }
 \value{
 An object of MSEtool class stock

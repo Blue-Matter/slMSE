@@ -154,7 +154,7 @@ slStock = function(Name = "A short-lived creature", Species = "Shortus liveus", 
     movout = get_mov_D(fracsin, fracsout, prob = rep(prob_stay,nareas))
     Movement[1,,,aa,1] = movout$mov
   }
-  stock@Spatial = Spatial(Movement=Movement)
+  stock@Spatial = Spatial(Movement=Movement, RelativeSize = rep(1/nareas,nareas))
 
   # --- Depletion --------------------------------------------------------------
 
