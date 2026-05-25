@@ -9,6 +9,7 @@
 #' @param Author Character string. Name of the author(s) of the operating model E.g., "A. Person"
 #' @param Email Character string. Email address of the corresponding author
 #' @param Region Character string. The location of the stock / management area.
+#' @param ComplexName Character string. The name of the multi-stock complex (if more than 1 stock is being simulated).
 #' @param Latitude Real number. Degrees N. Negative is southern hemisphere
 #' @param Longitude Real number. Degrees E. Negative is western hemisphere
 #' @param Sponsor Character string. The name of the person(s) or organization(s) that paid for the research.
@@ -29,12 +30,12 @@
 #' @seealso \link{slStock} for making a short-lived stock object and \link{slFleet} for making a short-lived fleet object.
 #' @export
 slOM = function(Name = "Short-lived simulation", Agency = "A fishery agency", Author = "A fishery analyst",
-                 Email = "a.person@email.com", Region = "A fishery management area", Latitude = NA, Longitude = NA,
+                 Email = "a.person@email.com", Region = "A fishery management area", ComplexName = "Short-Lived Complex", Latitude = NA, Longitude = NA,
                  Sponsor = "A generous funder", nSim = 4, nYear = 10, pYear = 10, Seasons = 12, CurrentYear = 2026,
                  Interval = 6, Seed = 1, stock = NA, fleet = NA, obs = NA){
 
-  #  Name = "Short-lived simulation"; Agency = "A fishery agency"; Author = "A fishery analyst"; Email = "a.person@email.com"; Region = "A fishery management area"; Latitude = NA; Longitude = NA
-  #  Sponsor = "A generous funder"; nSim = 4; nYear = 10; pYear = 10; Seasons = 12; CurrentYear = 2026; Interval = 6; Seed = 1
+  #  Name = "Short-lived simulation"; Agency = "A fishery agency"; Author = "A fishery analyst"; Email = "a.person@email.com"; Region = "A fishery management area"; ComplexName = "Short-Lived Complex"; Latitude = NA; Longitude = NA
+  #  Sponsor = "A generous funder"; nSim = 4; nYear = 10; pYear = 10; Seasons = 12; CurrentYear = 2026; Interval = 6; Seed = 1; obs = NA
 
   om = new('om')     # Operating model object
 
@@ -60,26 +61,26 @@ slOM = function(Name = "Short-lived simulation", Agency = "A fishery agency", Au
   #om@Data=data
   # imp
 
-  if(!(class(obs)=="obs"))obs = slObs()
-  if(!(class(stock)%in%c("list","stock")))stock = slStock()
-  if(!(class(fleet)%in%c("list","fleet")))fleet = slFleet()
+  if(!(class(obs)=="obs")) obs = slObs()
+  if(!(class(stock)%in%c("list","stock"))) stock = slStock()
+  if(!(class(fleet)=="StockFleetList")) fleet = slFleet()
 
+  nstocks = length(stock)
   om@Stock = stock
+  class(om@Stock) = "StockList"
   om@Fleet = fleet
   om@Obs = obs
 
   om = Populate(om)
-  om@Fleet <- Extend(om@Fleet, nSim = om@nSim)
+  #om@Fleet <- Extend(om@Fleet, nSim = om@nSim)
 
-  #list("Astock" = stock)
-  class(om@Stock) = "StockList"
+  if(nstocks > 1){                   # Complex specification
+    om@Complexes = list(1:nstocks)
+    names(om@Complexes) = ComplexName
+  }
 
-  sfl = list(); class(sfl) = "StockFleetList"
-  sfl[['Astock']] = list()
-  class(sfl[['Astock']]) = "FleetList"
-  sfl$Astock$Fleet1 = fleet
-  om@Fleet = sfl
- 
+
+
   om
 
 }

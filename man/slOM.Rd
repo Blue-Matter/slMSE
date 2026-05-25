@@ -10,6 +10,7 @@ slOM(
   Author = "A fishery analyst",
   Email = "a.person@email.com",
   Region = "A fishery management area",
+  ComplexName = "Short-Lived Complex",
   Latitude = NA,
   Longitude = NA,
   Sponsor = "A generous funder",
@@ -35,6 +36,8 @@ slOM(
 \item{Email}{Character string. Email address of the corresponding author}
 
 \item{Region}{Character string. The location of the stock / management area.}
+
+\item{ComplexName}{Character string. The name of the multi-stock complex (if more than 1 stock is being simulated).}
 
 \item{Latitude}{Real number. Degrees N. Negative is southern hemisphere}
 

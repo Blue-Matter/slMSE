@@ -17,6 +17,7 @@
 #' @param rec_age Positive Integer. The age the fish is recruited (in seasonal time steps). E.g., given a monthly model (Seasons = 12) a value of 4 means that the stock recruitment function calculates recruiment into the time step 4 months later.
 #' @param nAges Positive Integer. The number of seasonal time steps that population dynamics will be calculated for. E.g., 24 would be two years in a monthly model. Note that this only necessary if creatures live that long or dynamics are not suitably approximated with a plus group.
 #' @param Effort A matrix of positive real numbers nSim x time steps (nYear x Seasons). Given a default q value of 1 this is the apical fishing mortality rate. Defaul is 'NA' and in this case effort pattern is simulated with a seasonal and temporal trend.
+#' @param maxF Positive real number. The maximum apical (most selected age class) fishing mortality rate.
 #' @param sel50 Positive real number. The age (in seasons) that 50% of individuals are selected, in a logistic selectivity model. E.g., 6 in a monthly model would be 50% selected after 6 months.
 #' @param selSLP Positive real number. The slope of the logistic selectivity model. E.g., 2 in a monthly model.
 #' @param plot Boolean. Should plots be presented on the creation of the fleet object.
@@ -28,7 +29,7 @@
 #' @seealso \link{slFleet} for making a short-lived stock object and \link{slOM} for specifying the entire operating model from fleet and stock objects.
 #' @export
 slFleet = function(Name = "A fleet", nYear = 10, pYear = 10, Seasons = 12, CurrentYear = 2026,
-                   nSim = 4, rec_age = 1, nAges = 24, Effort = NA, sel50 = 6, selSLP = 2,
+                   nSim = 4, rec_age = 1, nAges = 24, Effort = NA, maxF = 0.1, sel50 = 6, selSLP = 2,
                    plot = F){
 
   # Default args for testing:

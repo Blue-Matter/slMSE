@@ -95,7 +95,11 @@ slStock = function(Name = "A short-lived creature", Species = "Shortus liveus", 
 
   # --- Ages -------------------------------------------------------------------
 
-  stock@Ages = Ages(MaxAge = nages, MinAge = rec_age, Units = "month", PlusGroup = F)
+  units = "month"
+  if(Seasons == 4)  units = "quarter"
+  if(Seasons == 52) units = "week"
+  if(Seasons == 365) units = "day"
+  stock@Ages = Ages(MaxAge = nages, MinAge = rec_age, Units = units, PlusGroup = F)
 
   # --- Length -----------------------------------------------------------------
 

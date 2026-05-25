@@ -12,7 +12,7 @@ slFleet(
   CurrentYear = 2026,
   nSim = 4,
   rec_age = 1,
-  nages = 24,
+  nAges = 24,
   Effort = NA,
   sel50 = 6,
   selSLP = 2,
@@ -34,7 +34,7 @@ slFleet(
 
 \item{rec_age}{Positive Integer. The age the fish is recruited (in seasonal time steps). E.g., given a monthly model (Seasons = 12) a value of 4 means that the stock recruitment function calculates recruiment into the time step 4 months later.}
 
-\item{nages}{Positive Integer. The number of seasonal time steps that population dynamics will be calculated for. E.g., 24 would be two years in a monthly model. Note that this only necessary if creatures live that long or dynamics are not suitably approximated with a plus group.}
+\item{nAges}{Positive Integer. The number of seasonal time steps that population dynamics will be calculated for. E.g., 24 would be two years in a monthly model. Note that this only necessary if creatures live that long or dynamics are not suitably approximated with a plus group.}
 
 \item{Effort}{A matrix of positive real numbers nSim x time steps (nYear x Seasons). Given a default q value of 1 this is the apical fishing mortality rate. Defaul is 'NA' and in this case effort pattern is simulated with a seasonal and temporal trend.}
 
