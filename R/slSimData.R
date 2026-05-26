@@ -1,17 +1,4 @@
 
-#obj = hist
-
-tsdatplot_byft = function(ts, ylab, ftcol, labcex = 0.85){
-
-  nf = dim(ts)[3]
-  nsim = dim(ts)[1]
-  yrs = as.numeric(dimnames(ts)[[2]])
-  ylim = c(0,max(ts)*1.05)
-  plot(range(yrs),ylim,col="white",xlab="",ylab=""); grid()
-  for(ff in 1:nf)matplot(yrs,t(ts[,,ff]),type="l",col=ftcol[ff],lty=1:nsim,lwd=1,add=T)
-  mtext(ylab,2,line=2.4,cex = labcex)
-  mtext("Year",1,line=2.4,cex=labcex)
-}
 
 get_Landings = function(obj){
   temp = lapply(obj,function(x)x[[1]]@Landings@Value)
@@ -39,7 +26,7 @@ get_CPUE = function(obj){
   temparr = aperm(array(unlist(temp),c(nyr, nft, nsim)),c(3,1,2))
   dimnames(temparr) = list(paste0("sim_",1:nsim),rownames(temp[[1]]), colnames(temp[[1]]))
   temparr
-
+  
 }
 
 
@@ -51,18 +38,18 @@ get_Survey = function(obj){
   temparr = aperm(array(unlist(temp),c(nyr, nft, nsim)),c(3,1,2))
   dimnames(temparr) = list(paste0("sim_",1:nsim),rownames(temp[[1]]), colnames(temp[[1]]))
   temparr
-
+  
 }
 
 get_CAL = function(obj){
   #obj@LandingsAtSize
-
+  
 }
 
 
 sampleCAL = function(NAA, sel){
-
-
+  
+  
 }
 
 invent_CAL = function(obj, ESS = 200){ # hack to create mulitnomial catch at length by fleet and stock
@@ -76,7 +63,7 @@ invent_CAL = function(obj, ESS = 200){ # hack to create mulitnomial catch at len
   nsim = nSim(obj)
   CAL = array(0, c(nsim,ns,nf,ny,nl))
   NAAs = obj@Number
-
+  
   for(sim in 1:nsim){
     for(ss in 1:ns){
       ALK = obj@OM@Stock[[ss]]@Length@ALK[1,,,1]
@@ -89,59 +76,34 @@ invent_CAL = function(obj, ESS = 200){ # hack to create mulitnomial catch at len
       }
     }
   }
-
+  
   dimnames(CAL) = list(paste0("sim_",1:nsim), names(obj@OM@Stock), names(obj@OM@Fleet[[1]]),years,CALmids)
   CAL_y = apply(array(CAL,c(nsim,ns,nf,Seasons(obj),nYear(obj),nl)),c(1,2,3,5,6),sum)
   dimnames(CAL_y) = list(paste0("sim_",1:nsim), names(obj@OM@Stock), names(obj@OM@Fleet[[1]]),CalcYears(nYear(obj),0,obj@OM@CurrentYear,1),CALmids)
   list(CAL = CAL, CAL_y = CAL_y)
 }
 
-process_simdata = function(obj){
-
+slSimData = function(obj){
+  
   dat = obj@Data
-
+  
   Landings = get_Landings(dat)
   Landings_y = convyr(Landings, Seasons = Seasons)
-
+  
   CPUE = get_CPUE(dat)
   CPUE_y = convyr(CPUE, Seasons = Seasons)
-
+  
   Survey = get_Survey(dat)
   Survey_y = convyr(Survey, Seasons = Seasons)
-
+  
   # CAL = get_CAL(dat) # coming when obs provides LandingsAtSize
   CALs = invent_CAL(obj)
   CAL = CALs$CAL
   CAL_y = CALs$CAL_y
-
+  
   list(Landings = Landings, Landings_y = Landings_y,
        CPUE = CPUE, CPUE_y = CPUE_y,
        Survey = Survey, Survey_y = Survey_y,
        CAL = CAL, CAL_y = CAL_y)
-
-}
-
-slplot.Data = function(obj, sims = 1:2, ftcol = c("red","blue","green","black","darkgrey","purple")){
-
-  Seasons = obj[[1]][[1]]@Seasons
-  par(mfrow=c(2,3),mai=c(0.5,0.5,0.2,0.05))
-  pdat = process_simdata(obj)
-
-  # Landings by fleet
-  tsdatplot_byft(pdat$Landings[sims,,,drop=F],"Landings by Fleet, Season (kg)",ftcol)
-
-  # Annual landings by fleet
-  tsdatplot_byft(pdat$Landings_y[sims,,,drop=F],"Annual Landings by Fleet (kg)",ftcol)
-
-  # Total annual landings
-  Ty = array(apply(pdat$Landings_y, 1:2,sum),c(dim(pdat$Landings_y)[1:2],1))
-  dimnames(Ty)[1:2] = dimnames(pdat$Landings_y)[1:2]
-  tsdatplot_byft(Ty[sims,,,drop=F],"Total Annual Landings (kg)","black")
-
-  # CPUE by fleet
-  tsdatplot_byft(pdat$CPUE[sims,,,drop=F],"CPUE by Fleet, Season",ftcol)
-
-  # Annual CPUE by fleet
-  tsdatplot_byft(ts = pdat$CPUE_y[sims,,,drop=F],"Annual CPUE by Fleet",ftcol)
-
+  
 }

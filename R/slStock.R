@@ -28,6 +28,7 @@
 #' @param t0 Negative real number or vector of negative real numbers nSim long. The theoretical length at age (seasonal) zero.
 #' @param Len_age Vector of positive real numbers, nages long. The Length at age.
 #' @param Len_CV Positive real number. The coefficient of variation of length at age. Typically between 0.05 and 0.25.
+#' @param lenclasses Vector of ascending positive real numbers. The mid points of the length classes (max should exceed Linf)
 #' @param a Positive real number. Weight (W) at length (L) parameter a. W = aL^b. Converts units of length to weight.
 #' @param b Positive real number. Weight (W) at length (L) parameter b. W = aL^b. Typically approximately cubic (3-ish)
 #' @param Wt_age Vector of positive real numbers, nages long. The weight at age.
@@ -56,7 +57,7 @@ slStock = function(Name = "A short-lived creature", Species = "Shortus liveus", 
                    nYear = 10, pYear = 10, Seasons = 12, CurrentYear = 2026, nSim = 4,
                    rec_age = 1, nages = 24, PlusGroup = F,
                    spawndist = c(0, 0, 0.1, 0.5, 0.3, 0.2, 0, 0, 0, 0, 0, 0),
-                   Linf = 1, K = 0.2, t0 = 0, Len_CV = 0.2, Len_age = NA,
+                   Linf = 10, K = 0.2, t0 = 0, Len_CV = 0.2, Len_age = NA, lenclasses = 1:15,
                    a = 1E-5, b = 3, Wt_age = NA,
                    M = 0.2, amat50 = 6, amatSLP = 2,
                    Mat_age = NA,
@@ -110,6 +111,7 @@ slStock = function(Name = "A short-lived creature", Species = "Shortus liveus", 
   Length@CVatAge = rep(Len_CV, na)
   Length@Dist = "normal"
   Length@TruncSD = 2
+  Length@Classes = lenclasses
   stock@Length = Length
 
   # --- Weight------------------------------------------------------------------
