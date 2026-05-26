@@ -136,16 +136,21 @@ slStock = function(Name = "A short-lived creature", Species = "Shortus liveus", 
 
   # --- Fecundity slot for spawndist -------------------------------------------
 
-  fec = amat
-  find = MSEtool:::TEG(dim(fec))
-  sind = rep(spawndist,1000)[1:dim(fec)[3]]
-  sind[1] = 0
-  fec[find] = fec[find]*sind[find[,3]]*Weight@MeanAtAge[find[,2]]
-  stock@Fecundity=Fecundity(MeanAtAge = fec)
+  #fec = amat
+  #find = MSEtool:::TEG(dim(fec))
+  #sind = rep(spawndist,1000)[1:dim(fec)[3]]
+  #sind[1] = 0
+  #fec[find] = fec[find]*sind[find[,3]]*Weight@MeanAtAge[find[,2]]
+  #stock@Fecundity=Fecundity(MeanAtAge = fec)
 
   # --- Stock-Recruitment ------------------------------------------------------
 
-  stock@SRR = SRR(Model = SR_type, Pars = list(h = h), R0 = R0, SD = sigmaR, AC = R_AC, TruncSD = trunc_sigmaR)
+  R0array = array(R0,c(nSim, Seasons * (pYear+nYear)))
+  Rind = MSEtool:::TEG(dim(R0array))
+  sind = rep(spawndist,1000)[1:dim(R0array)[2]]
+  R0array[Rind] =  R0array[Rind] * sind[Rind[,2]]
+
+  stock@SRR = SRR(Model = SR_type, Pars = list(h = h), R0 = R0array, SD = sigmaR, AC = R_AC, TruncSD = trunc_sigmaR)
 
   # --- Spatial ----------------------------------------------------------------
 

@@ -35,7 +35,7 @@ slOM = function(Name = "Short-lived simulation", Agency = "A fishery agency", Au
                  Interval = 6, Seed = 1, stock = NA, fleet = NA, obs = NA){
 
   #  Name = "Short-lived simulation"; Agency = "A fishery agency"; Author = "A fishery analyst"; Email = "a.person@email.com"; Region = "A fishery management area"; ComplexName = "Short-Lived Complex"; Latitude = NA; Longitude = NA
-  #  Sponsor = "A generous funder"; nSim = 4; nYear = 10; pYear = 10; Seasons = 12; CurrentYear = 2026; Interval = 6; Seed = 1; obs = NA
+  #  Sponsor = "A generous funder"; nSim = 4; nYear = 10; pYear = 10; Seasons = 12; CurrentYear = 2026; Interval = 6; Seed = 1; obs = NA; stock = NA; fleet = NA
 
   om = new('om')     # Operating model object
 
@@ -67,7 +67,7 @@ slOM = function(Name = "Short-lived simulation", Agency = "A fishery agency", Au
 
   nstocks = length(stock)
   om@Stock = stock
-  class(om@Stock) = "StockList"
+  #class(om@Stock) = "StockList"
   om@Fleet = fleet
   om@Obs = obs
 
@@ -78,8 +78,6 @@ slOM = function(Name = "Short-lived simulation", Agency = "A fishery agency", Au
     om@Complexes = list(1:nstocks)
     names(om@Complexes) = ComplexName
   }
-
-
 
   om
 
