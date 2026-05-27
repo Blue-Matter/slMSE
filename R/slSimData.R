@@ -26,7 +26,7 @@ get_CPUE = function(obj){
   temparr = aperm(array(unlist(temp),c(nyr, nft, nsim)),c(3,1,2))
   dimnames(temparr) = list(paste0("sim_",1:nsim),rownames(temp[[1]]), colnames(temp[[1]]))
   temparr
-  
+
 }
 
 
@@ -38,21 +38,22 @@ get_Survey = function(obj){
   temparr = aperm(array(unlist(temp),c(nyr, nft, nsim)),c(3,1,2))
   dimnames(temparr) = list(paste0("sim_",1:nsim),rownames(temp[[1]]), colnames(temp[[1]]))
   temparr
-  
+
 }
 
 get_CAL = function(obj){
   #obj@LandingsAtSize
-  
+
 }
 
 
 sampleCAL = function(NAA, sel){
-  
-  
+
+
 }
 
 invent_CAL = function(obj, ESS = 200){ # hack to create mulitnomial catch at length by fleet and stock
+
   Seasons = Seasons(obj)
   ns = nStock(obj)
   nf = nFleet(obj)
@@ -63,20 +64,21 @@ invent_CAL = function(obj, ESS = 200){ # hack to create mulitnomial catch at len
   nsim = nSim(obj)
   CAL = array(0, c(nsim,ns,nf,ny,nl))
   NAAs = obj@Number
-  
+
   for(sim in 1:nsim){
     for(ss in 1:ns){
       ALK = obj@OM@Stock[[ss]]@Length@ALK[1,,,1]
       for(ff in 1:nf){
         for(yy in 1:ny){
           Nage = apply(NAAs[[ss]][sim,,yy,,drop=F],2,sum)
-          Nlen = Nage%*%ALK
+          sel = obj@OM@Fleet[[ss]][[ff]]@Selectivity@MeanAtAge[1,,1,1]
+          Nlen = (sel*Nage)%*%ALK
           CAL[sim,ss,ff,yy,] = rmultinom(1,ESS,Nlen)
         }
       }
     }
   }
-  
+
   dimnames(CAL) = list(paste0("sim_",1:nsim), names(obj@OM@Stock), names(obj@OM@Fleet[[1]]),years,CALmids)
   CAL_y = apply(array(CAL,c(nsim,ns,nf,Seasons(obj),nYear(obj),nl)),c(1,2,3,5,6),sum)
   dimnames(CAL_y) = list(paste0("sim_",1:nsim), names(obj@OM@Stock), names(obj@OM@Fleet[[1]]),CalcYears(nYear(obj),0,obj@OM@CurrentYear,1),CALmids)
@@ -84,26 +86,40 @@ invent_CAL = function(obj, ESS = 200){ # hack to create mulitnomial catch at len
 }
 
 slSimData = function(obj){
-  
+
   dat = obj@Data
-  
+
   Landings = get_Landings(dat)
   Landings_y = convyr(Landings, Seasons = Seasons)
-  
+
   CPUE = get_CPUE(dat)
   CPUE_y = convyr(CPUE, Seasons = Seasons)
-  
+
   Survey = get_Survey(dat)
   Survey_y = convyr(Survey, Seasons = Seasons)
-  
+
   # CAL = get_CAL(dat) # coming when obs provides LandingsAtSize
   CALs = invent_CAL(obj)
   CAL = CALs$CAL
   CAL_y = CALs$CAL_y
-  
-  list(Landings = Landings, Landings_y = Landings_y,
+
+  #
+  Seasons = Seasons(obj)
+  nStock = nStock(obj)
+  nFleet = nFleet(obj)
+  CALmids = obj@OM@Stock[[1]]@Length@Classes
+  nLen = length(CALmids)
+  years = Years(obj, Period="Historical")
+  nYear = length(years)
+  nSim = nSim(obj)
+
+  slsd = list(Landings = Landings, Landings_y = Landings_y,
        CPUE = CPUE, CPUE_y = CPUE_y,
        Survey = Survey, Survey_y = Survey_y,
-       CAL = CAL, CAL_y = CAL_y)
-  
+       CAL = CAL, CAL_y = CAL_y, nSeason = Seasons, nStock = nStock, nFleet = nFleet,
+       nLen = nLen, nYear = nYear, nSim = nSim, CALmids = CALmids, years = years)
+
+  class(slsd) = "slSimData"
+  slsd
+
 }

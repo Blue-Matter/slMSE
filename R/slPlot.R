@@ -1,16 +1,10 @@
 slplot = function(obj){
 
-  if(class(obj)=="om")   slplot.om(obj)
   if(class(obj)=="hist") slplot.hist(obj)
-  if(class(obj)=="data") slplot.data(obj)
+  if(class(obj)=="slSimData") slplot.data(obj)
 
 }
 
-
-slplot.om = function(obj){
-
-
-}
 
 dolab=function(i){mtext(paste0("(",letters[i],")"),adj=0.025, line=0.2,cex=0.7); return(i+1)}
 
@@ -20,11 +14,12 @@ slplot.hist = function(obj, scol = c("red","green","blue","black","darkgrey","pu
   ylabline = 2.4; xlabline = 2.4
   par(mfrow=c(3,5),mai=c(0.5,0.5,0.2,0.05))
   snames = names(obj@OM@Stock)
-  ages = as.numeric(rownames(len))
+
   years = Years(obj, Period="Historical")
   # Life history
 
   len = sapply(obj@OM@Stock, function(x)x@Length@MeanAtAge[1,,1])
+  ages = as.numeric(rownames(len))
   matplot(ages, len, type="l", ylim = c(0,max(len)), lty=1, col=scol,xlab="",ylab="");grid();
   mtext("Age (years)",1,line=xlabline, cex=labcex); mtext("Length (cm)",2,line=ylabline, cex=labcex)
   legend('bottomright',legend=snames, text.col=scol,bty="n");
@@ -107,6 +102,7 @@ slplot.hist = function(obj, scol = c("red","green","blue","black","darkgrey","pu
   mtext("Year",1,line=xlabline, cex=labcex); mtext("Total Apical Fish. Mort.",2,line=ylabline, cex=labcex)
   i = dolab(i)
 
+  FbFs = apply(obj@FDead,2:4,mean)
   FbFy = apply(array(FbFs,c(nStock(obj),Seasons(obj),nYear(obj),nFleet(obj))),c(1,3,4),sum)
   ylim=c(0,max(FbFy))
   xval = CalcYears(nYear=nYear(obj), pYear = 0, CurrentYear=CurrentYear(obj))
@@ -116,7 +112,6 @@ slplot.hist = function(obj, scol = c("red","green","blue","black","darkgrey","pu
   legend('top',legend=FleetNames(obj),lty=1:nFleet(obj),bty="n")
   i = dolab(i)
 
-  FbFs = apply(obj@FDead,2:4,mean)
   FbF = apply(array(FbFs,c(nStock(obj),Seasons(obj),nYear(obj),nFleet(obj))),c(1,2,4),mean)
   ylim=c(0,max(FbF))
   matplot(FbF[1,,],col=scol[1],type='l',ylim=ylim,xlab="", ylab="", lty=1:nFleet(obj));grid()

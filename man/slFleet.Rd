@@ -14,6 +14,14 @@ slFleet(
   rec_age = 1,
   nAges = 24,
   Effort = NA,
+  relE_loc = 0.35,
+  relE_freq = 0.85,
+  relE_min = 0.25,
+  relE_max = 0.5,
+  relE_CV = 0.25,
+  maxF = 0.1,
+  smu = 0.5,
+  scv = 0.2,
   sel50 = 6,
   selSLP = 2,
   plot = F
@@ -38,15 +46,27 @@ slFleet(
 
 \item{Effort}{A matrix of positive real numbers nSim x time steps (nYear x Seasons). Given a default q value of 1 this is the apical fishing mortality rate. Defaul is 'NA' and in this case effort pattern is simulated with a seasonal and temporal trend.}
 
+\item{relE_loc}{Positive fraction. Starting location (year 1) of the annual sinewave pattern of effort.}
+
+\item{relE_freq}{Positive real number. The frequency of the sine wave of annual effort. A value of 1 is one complete sinewave.}
+
+\item{relE_min}{Positive real number. The minimum annual value of sin wave relative effort.}
+
+\item{relE_max}{Positive real number. The maximum annual value of sin wave relative effort.}
+
+\item{relE_CV}{Positive real number. The coefficient of variation for seasonal effort.}
+
+\item{maxF}{Positive real number. The maximum apical (most selected age class) fishing mortality rate.}
+
+\item{smu}{Positive fraction. The location of the mean (modal) seasonal effot within year. A value of 0.5 has a peak exactly mid year.}
+
+\item{scv}{Positive real number. The CV controling the normal distribution of effort across seasons. A large value is 'flat' effort across seasons.}
+
 \item{sel50}{Positive real number. The age (in seasons) that 50% of individuals are selected, in a logistic selectivity model. E.g., 6 in a monthly model would be 50% selected after 6 months.}
 
 \item{selSLP}{Positive real number. The slope of the logistic selectivity model. E.g., 2 in a monthly model.}
 
 \item{plot}{Boolean. Should plots be presented on the creation of the fleet object.}
-
-\item{Species}{Character string. The genus and species. E.g., "Ommastrephes bartramii"}
-
-\item{CommonName}{Character string. The common name. E.g., "Neon Flying Squid"}
 }
 \value{
 An object of MSEtool class fleet

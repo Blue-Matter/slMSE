@@ -17,11 +17,12 @@ slStock(
   nages = 24,
   PlusGroup = F,
   spawndist = c(0, 0, 0.1, 0.5, 0.3, 0.2, 0, 0, 0, 0, 0, 0),
-  Linf = 1,
+  Linf = 10,
   K = 0.2,
   t0 = 0,
   Len_CV = 0.2,
   Len_age = NA,
+  lenclasses = 1:15,
   a = 1e-05,
   b = 3,
   Wt_age = NA,
@@ -78,6 +79,8 @@ slStock(
 \item{Len_CV}{Positive real number. The coefficient of variation of length at age. Typically between 0.05 and 0.25.}
 
 \item{Len_age}{Vector of positive real numbers, nages long. The Length at age.}
+
+\item{lenclasses}{Vector of ascending positive real numbers. The mid points of the length classes (max should exceed Linf)}
 
 \item{a}{Positive real number. Weight (W) at length (L) parameter a. W = aL^b. Converts units of length to weight.}
 

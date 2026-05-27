@@ -70,7 +70,7 @@ slStock = function(Name = "A short-lived creature", Species = "Shortus liveus", 
   # Default args for testing:
   # Name = "A short-lived creature"; Species = "Shortus liveus"; CommonName = "Short-lived creature"
   # nYear = 10; pYear = 10; Seasons = 12; CurrentYear = 2026; nSim = 4; rec_age = 1; nages = 24; PlusGroup = F
-  # Linf = 1; K = 0.2; t0 = 0; Len_CV = 0.2; a = 1; b = 3; M = 0.2; amat50 = 6; amatSLP = 2;
+  # Linf = 10; K = 0.2; t0 = 0; Len_CV = 0.2; a = 1; b = 3; M = 0.2; amat50 = 6; amatSLP = 2;
   # spawndist = c(0, 0, 0.1, 0.5, 0.3, 0.2, 0, 0, 0, 0, 0, 0)
   # h = 0.9; R0 = 1E6; sigmaR = 1.0; trunc_sigmaR = 2.0; R_AC = 0.5; nareas = 2;  prob_stay = 0.9
   # Frac_area = matrix(c(0.95,0.9,0.85,0.8,0.75,0.7,0.65,0.6,0.55,0.5,0.5,0.5,0.45,0.4,0.35,0.3,0.25,0.2,0.15,0.1,0.05,0.01,0.01,0.01, 0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.5,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.99,0.99,0.99),nrow=2,byrow=T)
@@ -105,7 +105,7 @@ slStock = function(Name = "A short-lived creature", Species = "Shortus liveus", 
   # --- Length -----------------------------------------------------------------
 
   Length = new('length')
-  Length@MeanAtAge = Linf * 1-exp(-K * ((rec_age:nages)-t0))
+  Length@MeanAtAge = Linf * (1-exp(-K * ((rec_age:nages)-t0)))
   if(!is.na(Len_age[1]))  Length@MeanAtAge = Len_age
   Length@Units = "mm"
   Length@CVatAge = rep(Len_CV, na)
