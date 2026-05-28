@@ -184,5 +184,3 @@ get_spat_age_B = function(hist){
   blist
 
 }
-
-

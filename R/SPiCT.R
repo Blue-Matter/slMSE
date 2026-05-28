@@ -1,7 +1,7 @@
 
 # r.pr=c(0.4583,  0.2553, 1); bk.pr=c(0.5,0.3,1); shape.pr=c(2, 0.001, 1); oe=c(0.3, 0.5, 1); pe= c(0.2,0.5,1); fdevs=c(4, 0.5, 1); ce=c(0.05, 0.001, 1); q.pr= c(1,0.5,1); timing=0.625; dteuler=0.25; n_Indices = 1
 
-SPiCT_config = function(Sdata, r.pr=c(0.4583,  0.2553, 1), bk.pr=c(0.5,0.3,1),
+SPiCT_config = function(Sdata, r.pr=c(0.4,  0.2, 1), bk.pr=c(0.5,0.3,1),
                         shape.pr=c(2, 0.001, 1), oe=c(0.3, 0.5, 1), pe= c(0.2,0.5,1),
                         fdevs=c(4, 0.5, 1), ce=c(0.05, 0.001, 1),q.pr= c(1,0.5,1),
                         timing=0.625, dteuler=0.25){
@@ -65,6 +65,42 @@ SPiCT_data = function(sim, simdata){
 
 }
 
+
+getsval = function(fit, nam, ts=T){
+  temp = fit$value[names(fit$value)==nam]
+  if(ts){
+    if(length(temp) == length(fit$inp$time)){
+      keep = fit$inp$time %in% fit$inp$timeC
+      temp = temp[keep]
+      names(temp) = fit$inp$timeC
+    }else{
+      keep = 1:length(fit$inp$timeC)
+      temp = temp[keep]
+      names(temp) = fit$inp$timeC
+    }
+  }
+  temp
+}
+
+SPiCT_output = function(fit){
+  predts = fit$inp$time
+  BMSY = getsval(fit, "Bmsy",ts=F)
+  Brel = exp(getsval(fit, nam = "logBBmsy"))
+  B = BMSY * Brel
+  C = exp(getsval(fit, nam = "logCpred"))
+  U = C/B
+  list(B = B, C = C, U = U, BMSY = BMSY, predts = predts)
+}
+
+# advice generators
+# get.TAC(fit, fractiles = list(catch = 0.35), breakpointB = 0.5, limitB = 0.3).
+# fit <- retro(fit)
+# fit <- check.ini(fit)). The
+# estimates should be the same for all initial values (fit$check.ini$resmat
+# inp$optimiser.control = list(iter.max = 1e5, eval.max = 1e5) # increase numerical solve iterations
+# inp$ini$logn <- log(2); inp$phases$logn <- -1 # fix to schaefer
+# intiial biomass close to carrying capacity inp$priors$logbkfrac <- c(log(0.8),0.5,1)
+# fit <- manage(fit, scenarios = "ices").
 
 # vvvv --------------- Henning's Code: -------------- vvvvv
 

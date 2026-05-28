@@ -103,7 +103,7 @@ slSimData = function(obj){
   CAL = CALs$CAL
   CAL_y = CALs$CAL_y
 
-  #
+  # Dimensions
   Seasons = Seasons(obj)
   nStock = nStock(obj)
   nFleet = nFleet(obj)
@@ -113,13 +113,36 @@ slSimData = function(obj){
   nYear = length(years)
   nSim = nSim(obj)
 
+  # Sim quantities
+  B = t(sapply(1:nSim(obj),function(x, obj){get_sim_B(x, obj)}, obj=obj))
+  U = apply(Landings_y,1:2,sum)/B
+
   slsd = list(Landings = Landings, Landings_y = Landings_y,
        CPUE = CPUE, CPUE_y = CPUE_y,
        Survey = Survey, Survey_y = Survey_y,
        CAL = CAL, CAL_y = CAL_y, nSeason = Seasons, nStock = nStock, nFleet = nFleet,
-       nLen = nLen, nYear = nYear, nSim = nSim, CALmids = CALmids, years = years)
+       nLen = nLen, nYear = nYear, nSim = nSim, CALmids = CALmids, years = years,
+       B = B, U = U)
 
   class(slsd) = "slSimData"
   slsd
 
 }
+
+
+
+get_sim_B = function(sim, hist){
+
+  blist = list()
+  for(ss in 1:nStock(hist)){
+    N = hist@Number[[ss]][sim,,,]
+    W = hist@OM@Stock[[ss]]@Weight@MeanAtAge[1,,] # doesn't vary with sim
+    Btemp = apply(array(N*array(W,dim(N)),dim(N)),2,sum) # sum over ages and areas
+    blist[[ss]] = apply(array(Btemp,c(Seasons(hist),nYear(hist))),2,mean)
+  }
+  allB = array(unlist(blist),c(nYear(hist),nStock(hist)))
+  sumB = apply(allB,1,sum) # sum over all stocks
+  names(sumB) = CalcYears(nYear(hist),0,hist@OM@CurrentYear)
+  sumB
+}
+
