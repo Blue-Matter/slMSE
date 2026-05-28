@@ -122,7 +122,7 @@ slSimData = function(obj){
        Survey = Survey, Survey_y = Survey_y,
        CAL = CAL, CAL_y = CAL_y, nSeason = Seasons, nStock = nStock, nFleet = nFleet,
        nLen = nLen, nYear = nYear, nSim = nSim, CALmids = CALmids, years = years,
-       B = B, U = U)
+       B = B, U = U, BMSY = rep(1,nSim), MSY = rep(1,nSim), UMSY = rep(1,nSim), BMSY_B0 = rep(1,nSim))
 
   class(slsd) = "slSimData"
   slsd

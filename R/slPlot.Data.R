@@ -20,7 +20,7 @@ densplot = function(xs,mat,sims, xlab,ftcol,labcex = 0.85){
   mtext(xlab,1,line=2.4,cex=labcex)
 }
 
-slplot.data = function(obj, sims = 1:2, ftcol = c("red","blue","green","black","darkgrey","purple")){
+slplot.data = function(obj, sims = 1:2, ftcol = c("red","blue","green","black","darkgrey","purple"),Bdenom=1E3){
 
   i = 1
   par(mfrow=c(3,4),mai=c(0.5,0.5,0.2,0.05))
@@ -29,17 +29,17 @@ slplot.data = function(obj, sims = 1:2, ftcol = c("red","blue","green","black","
   # Total annual landings
   Ty = array(apply(obj$Landings_y, 1:2,sum),c(dim(obj$Landings_y)[1:2],1))
   dimnames(Ty)[[2]] = dimnames(obj$Landings_y)[[2]]
-  tsdatplot(ts=Ty[sims,,,drop=F],"Total Annual Landings (kg)","black")
+  tsdatplot(ts=Ty[sims,,,drop=F]/Bdenom,"Total Annual Landings (t)","black")
   legend('top', legend=paste0("Sim ",sims),lty=sims,col ="black", bty='n')
   i = dolab(i)
 
   # Landings by fleet
-  tsdatplot(obj$Landings[sims,,,drop=F],"Landings by Fleet, Season (kg)",ftcol)
+  tsdatplot(obj$Landings[sims,,,drop=F]/Bdenom,"Landings by Fleet, Season (t)",ftcol)
   legend('top', legend=Fleetnams, text.col=ftcol, bty='n')
   i = dolab(i)
 
   # Annual landings by fleet
-  tsdatplot(obj$Landings_y[sims,,,drop=F],"Annual Landings by Fleet (kg)",ftcol)
+  tsdatplot(obj$Landings_y[sims,,,drop=F]/Bdenom,"Annual Landings by Fleet (t)",ftcol)
   i = dolab(i)
 
   # CPUE by fleet

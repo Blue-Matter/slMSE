@@ -2,17 +2,18 @@ slplot = function(obj){
 
   if(class(obj)=="hist") slplot.hist(obj)
   if(class(obj)=="slSimData") slplot.data(obj)
+  if(class(obj)=="slSimSam") slplot.simsam(obj)
 
 }
 
 
 dolab=function(i){mtext(paste0("(",letters[i],")"),adj=0.025, line=0.2,cex=0.7); return(i+1)}
 
-slplot.hist = function(obj, scol = c("red","green","blue","black","darkgrey","purple"),labcex = 0.85){
+slplot.hist = function(obj, scol = c("red","green","blue","black","darkgrey","purple"),labcex = 0.85,Bdenom=1E3,recdenom=1E6){
 
   i = 1
-  ylabline = 2.4; xlabline = 2.4
-  par(mfrow=c(3,5),mai=c(0.5,0.5,0.2,0.05))
+  ylabline = 2.2; xlabline = 2.2
+  par(mfrow=c(4,5),mai=c(0.5,0.5,0.2,0.05))
   snames = names(obj@OM@Stock)
 
   years = Years(obj, Period="Historical")
@@ -49,48 +50,56 @@ slplot.hist = function(obj, scol = c("red","green","blue","black","darkgrey","pu
   # Recruitment
 
   rec = sapply(obj@Number,function(x)apply(x[,1,,],2,mean))
-  matplot(as.numeric(rownames(rec)), rec, type="l", lty=1, col=scol,xlab="",ylab="");grid();
-  mtext("Year",1,line=xlabline, cex=labcex); mtext("Recruitment",2,line=ylabline, cex=labcex)
+  matplot(as.numeric(rownames(rec)), rec/recdenom, type="l", lty=1, col=scol,xlab="",ylab="");grid();
+  mtext("Year",1,line=xlabline, cex=labcex); mtext("Recruitment (m)",2,line=ylabline, cex=labcex)
   i = dolab(i)
 
   arec = apply(array(rec,c(Seasons(obj),nYear(obj),nStock(obj))),2:3,sum)
   xval = CalcYears(nYear=nYear(obj), pYear = 0, CurrentYear=CurrentYear(obj))
-  matplot(xval,arec, type="l", lty=1, col=scol,xlab="",ylab="");grid();
-  mtext("Year",1,line=xlabline, cex=labcex); mtext("Annual Recruitment",2,line=ylabline, cex=labcex)
+  matplot(xval,arec/recdenom, type="l", lty=1, col=scol,xlab="",ylab="");grid();
+  mtext("Year",1,line=xlabline, cex=labcex); mtext("Annual Recruitment (m)",2,line=ylabline, cex=labcex)
   i = dolab(i)
 
   rec_s = apply(array(rec,c(obj@OM@Seasons,nYear(obj),nStock(obj))),c(1,3),mean)
-  matplot(rec_s, type="l", lty=1, col=scol,xlab="",ylab="");grid();
-  mtext("Season",1,line=xlabline, cex=labcex); mtext("Mean Recruitment",2,line=ylabline, cex=labcex)
+  matplot(rec_s/recdenom, type="l", lty=1, col=scol,xlab="",ylab="");grid();
+  mtext("Season",1,line=xlabline, cex=labcex); mtext("Mean Recruitment (m)",2,line=ylabline, cex=labcex)
   i = dolab(i)
 
   # Spatial Biomass
 
   Blist = get_spat_B(obj)
-  ylim=c(0,max(unlist(lapply(Blist,max))))
-  matplot(years,Blist[[1]],col=scol[1],type='l',ylim=ylim,xlab="", ylab="", lty=1:nArea(obj));grid()
-  if(nStock(obj)>1)for(ss in 1:nStock(obj))matplot(years, Blist[[ss]],col=scol[ss],type='l',lty=1:nArea(obj),add=T)
-  mtext("Year",1,line=xlabline, cex=labcex); mtext("Biomass (kg)",2,line=ylabline, cex=labcex)
+  ylim=c(0,max(unlist(lapply(Blist,max))))/Bdenom
+  matplot(years,Blist[[1]]/Bdenom,col=scol[1],type='l',ylim=ylim,xlab="", ylab="", lty=1:nArea(obj));grid()
+  if(nStock(obj)>1)for(ss in 1:nStock(obj))matplot(years, Blist[[ss]]/Bdenom,col=scol[ss],type='l',lty=1:nArea(obj),add=T)
+  mtext("Year",1,line=xlabline, cex=labcex); mtext("Biomass (t)",2,line=ylabline, cex=labcex)
   legend('topright',legend=paste0("Area",1:nArea(obj)),lty=1:nArea(obj),bty="n")
   i = dolab(i)
 
   # Biomass
 
   Blist = get_spat_ann_B(obj)
-  ylim=c(0,max(unlist(lapply(Blist,max))))
+  ylim=c(0,max(unlist(lapply(Blist,max))))/Bdenom
   xlab =  CalcYears(nYear=nYear(obj), pYear = 0, CurrentYear=CurrentYear(obj))
-  matplot(xlab,Blist[[1]],col=scol[1],type='l',ylim=ylim,xlab="", ylab="", lty=1:nArea(obj));grid()
-  if(nStock(obj)>1)for(ss in 1:nStock(obj))matplot(xlab, Blist[[ss]],col=scol[ss],type='l',lty=1:nArea(obj),add=T)
-  mtext("Year",1,line=xlabline, cex=labcex); mtext("Mean Annual Biomass (kg)",2,line=ylabline, cex=labcex)
+  matplot(xlab,Blist[[1]]/Bdenom,col=scol[1],type='l',ylim=ylim,xlab="", ylab="", lty=1:nArea(obj));grid()
+  if(nStock(obj)>1)for(ss in 1:nStock(obj))matplot(xlab, Blist[[ss]]/Bdenom,col=scol[ss],type='l',lty=1:nArea(obj),add=T)
+  mtext("Year",1,line=xlabline, cex=labcex); mtext("Mean Annual Biomass (t)",2,line=ylabline, cex=labcex)
   legend('topright',legend=paste0("Area",1:nArea(obj)),lty=1:nArea(obj),bty="n")
   i = dolab(i)
+
+  # Total Biomass
+  Bt = get_tot_ann_B(obj)
+  xlab =  CalcYears(nYear=nYear(obj), pYear = 0, CurrentYear=CurrentYear(obj))
+  matplot(xlab,Bt, type="l", ylim = c(0,max(Bt)), lty=1, col=scol,xlab="",ylab="");grid();
+  mtext("Age (years)",1,line=xlabline, cex=labcex); mtext("Biomass (t)",2,line=ylabline, cex=labcex)
+  i = dolab(i)
+
 
   # Ontogeny
 
   Bage = get_spat_age_B(obj)
-  ylim=c(0,max(unlist(lapply(Bage,max))))
-  matplot(ages,Bage[[1]],col=scol[1],type='l',ylim=ylim,xlab="", ylab="", lty=1:nArea(obj));grid()
-  if(nStock(obj)>1)for(ss in 1:nStock(obj))matplot(ages, Bage[[ss]],col=scol[ss],type='l',lty=1:nArea(obj),add=T)
+  ylim=c(0,max(unlist(lapply(Bage,max))))/Bdenom
+  matplot(ages,Bage[[1]]/Bdenom,col=scol[1],type='l',ylim=ylim,xlab="", ylab="", lty=1:nArea(obj));grid()
+  if(nStock(obj)>1)for(ss in 1:nStock(obj))matplot(ages, Bage[[ss]]/Bdenom,col=scol[ss],type='l',lty=1:nArea(obj),add=T)
   mtext("Age (years)",1,line=xlabline, cex=labcex); mtext("Mean Biomass (kg)",2,line=ylabline, cex=labcex)
   legend('topright',legend=paste0("Area",1:nArea(obj)),lty=1:nArea(obj),bty="n")
   i = dolab(i)
@@ -172,6 +181,10 @@ get_spat_ann_B = function(hist){
   blist
 
 }
+
+
+get_tot_ann_B = function(hist)  apply(array(apply(hist@Biomass,3:2,mean),c(Seasons(hist),nYear(hist),nStock(hist))),c(2,3),mean)
+
 
 get_spat_age_B = function(hist){
 

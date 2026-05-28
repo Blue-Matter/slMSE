@@ -67,12 +67,10 @@ slOM = function(Name = "Short-lived simulation", Agency = "A fishery agency", Au
 
   nstocks = length(stock)
   om@Stock = stock
-  #class(om@Stock) = "StockList"
   om@Fleet = fleet
-  om@Obs = obs
+  om@Obs = obs # you need to add biomass selectivity to survey - also catch at length is currently done post hoc
 
   om = Populate(om)
-  #om@Fleet <- Extend(om@Fleet, nSim = om@nSim)
 
   if(nstocks > 1){                   # Complex specification
     om@Complexes = list(1:nstocks)
