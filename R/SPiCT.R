@@ -68,17 +68,17 @@ SPiCT_data = function(sim, simdata, time_step = "year"){
   }else if(time_step == "quarter"){
     # Catches
     obsC = apply(simdata$Landings[sim,,,drop=F],2,sum) # sum over fleets
-    timeC <- as.numeric(names(obsC))
+    timeC = round(as.numeric(names(obsC)),2)
 
     # Indices
     obsI = timeI = list();
     for(ff in 1:simdata$nFleet){
       obsI[[ff]] = simdata$Survey[sim,,ff]
-      timeI[[ff]] = as.numeric(names(obsI[[ff]]))
+      timeI[[ff]] = round(as.numeric(names(obsI[[ff]])),2)
     }
 
     # Data input list
-    outlist = list(obsC=obsC, timeC=timeC, obsI=obsI, timeI=timeI)
+    outlist = list(obsC=obsC, timeC=timeC, obsI=obsI, timeI=timeI, dtc=rep(0.25,length(obsC)), nseasons = 4, seasontype=2)
   }
 
   outlist
@@ -110,11 +110,11 @@ SPiCT_output = function(fit){
   B = BMSY * Brel
   C = exp(getsval(fit, nam = "logCpred"))
   U = C/B
-  list(B = B, C = C, U = U, BMSY = BMSY, MSY = MSY, BMSY_B0 = BMSY_B0, predts = predts)
+  list(B = B, C = C, U = U, BMSY = BMSY, MSY = MSY, BMSY_B0 = BMSY_B0, predts = predts, fit=fit)
 }
 
 
-#  sim = 2; timestep="quarter"; r.pr = c(0.8,0.1,1); bk.pr = c(0.5,0.3,1);shape.pr = c(2, 0.001, 1);oe = c(0.5, 0.5, 1);pe = c(0.8,0.5,1);fdevs = c(4, 0.5, 1);ce = c(0.05, 0.001, 1);q.pr = NULL;timing = 0;dteuler = 0.01
+#  sim = 2; timestep="quarter"; r.pr = c(0.8,0.1,1); bk.pr = c(0.5,0.3,1);shape.pr = c(2, 0.001, 1);oe = c(0.5, 0.5, 1);pe = c(0.8,0.5,1);fdevs = c(4, 0.5, 1);ce = c(0.05, 0.001, 1);q.pr = NULL;timing = 0;dteuler = 0.05
 do_spict=function(sim, simdata, timestep = 'year',
                   r.pr = c(0.6,0.2,1),
                   bk.pr = c(0.5,0.3,1),
@@ -129,14 +129,14 @@ do_spict=function(sim, simdata, timestep = 'year',
 
   Sdata = SPiCT_data(sim, simdata, timestep)
   Sinput = SPiCT_config(Sdata, r.pr, bk.pr, shape.pr, oe, pe, fdevs, ce,  q.pr, timing, dteuler)
-  check.inp(Sinput)
+  ck = check.inp(Sinput)
   fit = fit.spict(Sinput)
   SPiCT_output(fit)
 
 }
 
 
-#  timestep = "year"; parallel = T; r.pr = c(0.5,0.2,1); bk.pr = c(0.5,0.3,1);shape.pr = c(2, 0.001, 1);oe = c(0.2, 0.5, 1);pe = c(0.2,0.5,1);fdevs = c(4, 0.5, 1);ce = c(0.05, 0.001, 1);q.pr = NULL;timing = 0.625;dteuler = 0.25
+#  timestep = "quarter"; parallel = T; r.pr = c(0.5,0.2,1); bk.pr = c(0.5,0.3,1);shape.pr = c(2, 0.001, 1);oe = c(0.2, 0.5, 1);pe = c(0.2,0.5,1);fdevs = c(4, 0.5, 1);ce = c(0.05, 0.001, 1);q.pr = NULL;timing = 0.625;dteuler = 0.25
 
 
 SimSam_spict = function(simdata, timestep = "year", parallel =T,
@@ -168,6 +168,14 @@ SimSam_spict = function(simdata, timestep = "year", parallel =T,
   SimSam = list()
   estU = t(sapply(Est,function(x)x$U))
   estB = t(sapply(Est,function(x)x$B))
+  if(timestep == "quarter"){
+    nsim = nrow(estU)
+    nt = ncol(estU)
+    yrs = unique(floor(as.numeric(colnames(estU))))
+    estB = apply(array(estB,c(nsim,4,nt/4)),c(1,3),mean)
+    estU = apply(array(estU,c(nsim,4,nt/4)),c(1,3),mean)
+    colnames(estB) = colnames(estU) =yrs
+  }
   estBMSY = sapply(Est,function(x)x$BMSY)
   estMSY = sapply(Est,function(x)x$MSY)
   estUMSY = estMSY / estBMSY
