@@ -1,3 +1,9 @@
+
+
+# panel labelling plus counter
+dolab=function(i){mtext(paste0("(",letters[i],")"),adj=0.025, line=0.2,cex=0.7); return(i+1)}
+
+# generic projection plot
 proj_plot = function(mat, lab, sims = 1:2, qsw = c(0.05,0.95), qsn = c(0.25,0.75), y0 = TRUE, ylim = NA, addn=T, addmed=T, addl = F,
                      xlab = "Year", ylab = "Value",fcol= "#10109950", add = F){
   ylabline = 2.2; xlabline = 2.2; labcex=0.85

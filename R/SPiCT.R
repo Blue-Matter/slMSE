@@ -2,9 +2,9 @@
 # Acknowledgement: This code was heavily influenced by code developed by Dr Henning Winker (legend that he is!)
 # r.pr=c(0.4583,  0.2553, 1); bk.pr=c(0.5,0.3,1); shape.pr=c(2, 0.001, 1); oe=c(0.3, 0.5, 1); pe= c(0.2,0.5,1); fdevs=c(4, 0.5, 1); ce=c(0.05, 0.001, 1); q.pr= c(1,0.5,1); timing=0.625; dteuler=0.25; n_Indices = 1
 
-SPiCT_config = function(Sdata, r.pr=c(0.4,  0.2, 1), bk.pr=c(0.5,0.3,1),
-                        shape.pr=c(2, 0.001, 1), oe=c(0.3, 0.5, 1), pe= c(0.2,0.5,1),
-                        fdevs=c(4, 0.5, 1), ce=c(0.05, 0.001, 1),q.pr= c(1,0.5,1),
+SPiCT_config = function(Sdata, r.pr=c(0.6,  0.2, 1), bk.pr=c(0.5,0.3,1),
+                        shape.pr=c(2, 0.001, 1), oe=c(0.3, 0.5, 1), pe= c(0.4,0.5,1),
+                        fdevs=c(4, 0.5, 1), ce=c(0.05, 0.001, 1), q.pr= c(1,0.5,1),
                         timing=0.625, dteuler=0.25){
 
   config = Sdata
@@ -47,22 +47,41 @@ SPiCT_config = function(Sdata, r.pr=c(0.4,  0.2, 1), bk.pr=c(0.5,0.3,1),
 }
 
 
-SPiCT_data = function(sim, simdata){
+SPiCT_data = function(sim, simdata, time_step = "year"){
 
-  # Catches
-  obsC = apply(simdata$Landings_y[sim,,,drop=F],2,sum) # sum over fleets
-  timeC <- as.numeric(names(obsC))
+  if(time_step == "year"){
 
-  # Indices
-  obsI = timeI = list();
-  for(ff in 1:simdata$nFleet){
-    obsI[[ff]] = simdata$Survey_y[sim,,ff]
-    timeI[[ff]] = as.numeric(names(obsI[[ff]]))
+    # Catches
+    obsC = apply(simdata$Landings_y[sim,,,drop=F],2,sum) # sum over fleets
+    timeC <- as.numeric(names(obsC))
+
+    # Indices
+    obsI = timeI = list();
+    for(ff in 1:simdata$nFleet){
+      obsI[[ff]] = simdata$Survey_y[sim,,ff]
+      timeI[[ff]] = as.numeric(names(obsI[[ff]]))
+    }
+
+    # Data input list
+    outlist = list(obsC=obsC, timeC=timeC, obsI=obsI, timeI=timeI)
+
+  }else if(time_step == "quarter"){
+    # Catches
+    obsC = apply(simdata$Landings[sim,,,drop=F],2,sum) # sum over fleets
+    timeC <- as.numeric(names(obsC))
+
+    # Indices
+    obsI = timeI = list();
+    for(ff in 1:simdata$nFleet){
+      obsI[[ff]] = simdata$Survey[sim,,ff]
+      timeI[[ff]] = as.numeric(names(obsI[[ff]]))
+    }
+
+    # Data input list
+    outlist = list(obsC=obsC, timeC=timeC, obsI=obsI, timeI=timeI)
   }
 
-  # Data input list
-  list(obsC=obsC, timeC=timeC, obsI=obsI, timeI=timeI)
-
+  outlist
 }
 
 
@@ -95,31 +114,33 @@ SPiCT_output = function(fit){
 }
 
 
-#  r.pr = c(0.5,0.2,1); bk.pr = c(0.5,0.3,1);shape.pr = c(2, 0.001, 1);oe = c(0.2, 0.5, 1);pe = c(0.2,0.5,1);fdevs = c(4, 0.5, 1);ce = c(0.05, 0.001, 1);q.pr = NULL;timing = 0.625;dteuler = 0.25
-do_spict=function(sim, simdata,
-                  r.pr = c(0.5,0.2,1),
+#  sim = 2; timestep="quarter"; r.pr = c(0.8,0.1,1); bk.pr = c(0.5,0.3,1);shape.pr = c(2, 0.001, 1);oe = c(0.5, 0.5, 1);pe = c(0.8,0.5,1);fdevs = c(4, 0.5, 1);ce = c(0.05, 0.001, 1);q.pr = NULL;timing = 0;dteuler = 0.01
+do_spict=function(sim, simdata, timestep = 'year',
+                  r.pr = c(0.6,0.2,1),
                   bk.pr = c(0.5,0.3,1),
                   shape.pr = c(2, 0.001, 1),
                   oe = c(0.2, 0.5, 1),
-                  pe = c(0.2,0.5,1),
+                  pe = c(0.5,0.5,1),
                   fdevs = c(4, 0.5, 1),
                   ce = c(0.05, 0.001, 1),
                   q.pr = NULL,
-                  timing = 0.625,
+                  timing = 0.01,
                   dteuler = 0.25){
 
-  Sdata = SPiCT_data(sim, simdata)
+  Sdata = SPiCT_data(sim, simdata, timestep)
   Sinput = SPiCT_config(Sdata, r.pr, bk.pr, shape.pr, oe, pe, fdevs, ce,  q.pr, timing, dteuler)
+  check.inp(Sinput)
   fit = fit.spict(Sinput)
   SPiCT_output(fit)
 
 }
 
 
-#  parallel = T; r.pr = c(0.5,0.2,1); bk.pr = c(0.5,0.3,1);shape.pr = c(2, 0.001, 1);oe = c(0.2, 0.5, 1);pe = c(0.2,0.5,1);fdevs = c(4, 0.5, 1);ce = c(0.05, 0.001, 1);q.pr = NULL;timing = 0.625;dteuler = 0.25
+#  timestep = "year"; parallel = T; r.pr = c(0.5,0.2,1); bk.pr = c(0.5,0.3,1);shape.pr = c(2, 0.001, 1);oe = c(0.2, 0.5, 1);pe = c(0.2,0.5,1);fdevs = c(4, 0.5, 1);ce = c(0.05, 0.001, 1);q.pr = NULL;timing = 0.625;dteuler = 0.25
 
 
-SimSam_spict = function(simdata, parallel =T, r.pr = c(0.5,0.2,1),
+SimSam_spict = function(simdata, timestep = "year", parallel =T,
+                        r.pr = c(0.5,0.2,1),
                         bk.pr = c(0.5,0.3,1),
                         shape.pr = c(2, 0.001, 1),
                         oe = c(0.2, 0.5, 1),
@@ -134,11 +155,11 @@ SimSam_spict = function(simdata, parallel =T, r.pr = c(0.5,0.2,1),
     setup()
     sfLibrary(slMSE)
     sfLibrary(spict)
-    Est = sfLapply(1:nSim,do_spict, simdata = simdata, r.pr = r.pr, bk.pr = bk.pr,
+    Est = sfLapply(1:nSim,do_spict, simdata = simdata, timestep = timestep, r.pr = r.pr, bk.pr = bk.pr,
                    shape.pr = shape.pr, oe = oe, pe = pe, fdevs = fdevs, ce = ce,
                    q.pr = q.pr, timing = timing, dteuler = dteuler)
   }else{
-    Est = lapply(1:nSim,do_spict, simdata = simdata, r.pr = r.pr, bk.pr = bk.pr,
+    Est = lapply(1:nSim,do_spict, simdata = simdata, timestep = timestep, r.pr = r.pr, bk.pr = bk.pr,
                  shape.pr = shape.pr, oe = oe, pe = pe, fdevs = fdevs, ce = ce,
                  q.pr = q.pr, timing = timing, dteuler = dteuler)
   }
