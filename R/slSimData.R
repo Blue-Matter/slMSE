@@ -151,6 +151,15 @@ slSimData = function(obj){
   U_y = apply(Landings_y,1:2,sum)/B_y
 
 
+  # Spec quantities
+  getmuage=function(x,slt)apply(slot(x,slt)@MeanAtAge, 2, mean)
+  len_age_guess = apply(sapply(obj@OM@Stock, getmuage, slt="Length"), 1, mean)
+  wt_age_guess = apply(sapply(obj@OM@Stock, getmuage, slt="Weight"), 1, mean)
+  mat_age_guess = apply(sapply(obj@OM@Stock, getmuage, slt="Maturity"), 1, mean)
+  mat_age_guess = mat_age_guess/max(mat_age_guess)
+  sel_age_guess = apply(sapply(obj@OM@Fleet[[1]], getmuage, slt="Selectivity"), 1, mean)
+
+
   slsd = list(Landings = Landings, Landings_q = Landings_q, Landings_y = Landings_y,
        CPUE = CPUE, CPUE_q = CPUE_q, CPUE_y = CPUE_y,
        Survey = Survey, Survey_q = Survey_q, Survey_y = Survey_y,
@@ -158,7 +167,9 @@ slSimData = function(obj){
        nSeason = Seasons, nStock = nStock, nFleet = nFleet,
        nLen = nLen, nYear = nYear, nSim = nSim, CALmids = CALmids, years = years,
        B_y = B_y, B_q = B_q, U_y = U_y, U_q = U_q,
-       BMSY = rep(1,nSim), MSY = rep(1,nSim), UMSY = rep(1,nSim), BMSY_B0 = rep(1,nSim))
+       BMSY = rep(1,nSim), MSY = rep(1,nSim), UMSY = rep(1,nSim), BMSY_B0 = rep(1,nSim),
+       len_age_guess = len_age_guess, wt_age_guess = wt_age_guess,
+       mat_age_guess = mat_age_guess, sel_age_guess = sel_age_guess)
 
   class(slsd) = "slSimData"
   slsd

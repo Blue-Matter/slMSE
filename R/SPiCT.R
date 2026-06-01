@@ -1,5 +1,44 @@
+# Acknowledgement: This code was heavily borrowed from code developed by Dr Henning Winker (legend that he is!)
 
-# Acknowledgement: This code was heavily influenced by code developed by Dr Henning Winker (legend that he is!)
+SPiCT_data = function(sim, simdata, time_step = "year"){
+
+  if(time_step == "year"){
+
+    # Catches
+    obsC = apply(simdata$Landings_y[sim,,,drop=F],2,sum) # sum over fleets
+    timeC <- as.numeric(names(obsC))
+
+    # Indices
+    obsI = timeI = list();
+    for(ff in 1:simdata$nFleet){
+      obsI[[ff]] = simdata$Survey_y[sim,,ff]
+      timeI[[ff]] = as.numeric(names(obsI[[ff]]))
+    }
+
+    # Data input list
+    outlist = list(obsC=obsC, timeC=timeC, obsI=obsI, timeI=timeI)
+
+  }else if(time_step == "quarter"){
+    # Catches
+    obsC = apply(simdata$Landings[sim,,,drop=F],2,sum) # sum over fleets
+    timeC = round(as.numeric(names(obsC)),2)
+
+    # Indices
+    obsI = timeI = list();
+    for(ff in 1:simdata$nFleet){
+      obsI[[ff]] = simdata$Survey[sim,,ff]
+      timeI[[ff]] = round(as.numeric(names(obsI[[ff]])),2)
+    }
+
+    # Data input list
+    outlist = list(obsC=obsC, timeC=timeC, obsI=obsI, timeI=timeI, dtc=rep(0.25,length(obsC)), nseasons = 4, seasontype=2)
+  }
+
+  outlist
+}
+
+
+
 # r.pr=c(0.4583,  0.2553, 1); bk.pr=c(0.5,0.3,1); shape.pr=c(2, 0.001, 1); oe=c(0.3, 0.5, 1); pe= c(0.2,0.5,1); fdevs=c(4, 0.5, 1); ce=c(0.05, 0.001, 1); q.pr= c(1,0.5,1); timing=0.625; dteuler=0.25; n_Indices = 1
 
 SPiCT_config = function(Sdata, r.pr=c(0.6,  0.2, 1), bk.pr=c(0.5,0.3,1),
@@ -45,45 +84,6 @@ SPiCT_config = function(Sdata, r.pr=c(0.6,  0.2, 1), bk.pr=c(0.5,0.3,1),
   return(config)
 
 }
-
-
-SPiCT_data = function(sim, simdata, time_step = "year"){
-
-  if(time_step == "year"){
-
-    # Catches
-    obsC = apply(simdata$Landings_y[sim,,,drop=F],2,sum) # sum over fleets
-    timeC <- as.numeric(names(obsC))
-
-    # Indices
-    obsI = timeI = list();
-    for(ff in 1:simdata$nFleet){
-      obsI[[ff]] = simdata$Survey_y[sim,,ff]
-      timeI[[ff]] = as.numeric(names(obsI[[ff]]))
-    }
-
-    # Data input list
-    outlist = list(obsC=obsC, timeC=timeC, obsI=obsI, timeI=timeI)
-
-  }else if(time_step == "quarter"){
-    # Catches
-    obsC = apply(simdata$Landings[sim,,,drop=F],2,sum) # sum over fleets
-    timeC = round(as.numeric(names(obsC)),2)
-
-    # Indices
-    obsI = timeI = list();
-    for(ff in 1:simdata$nFleet){
-      obsI[[ff]] = simdata$Survey[sim,,ff]
-      timeI[[ff]] = round(as.numeric(names(obsI[[ff]])),2)
-    }
-
-    # Data input list
-    outlist = list(obsC=obsC, timeC=timeC, obsI=obsI, timeI=timeI, dtc=rep(0.25,length(obsC)), nseasons = 4, seasontype=2)
-  }
-
-  outlist
-}
-
 
 getsval = function(fit, nam, ts=T){
   temp = fit$value[names(fit$value)==nam]
@@ -168,19 +168,20 @@ SimSam_spict = function(simdata, timestep = "year", parallel =T,
   SimSam = list()
   estU = t(sapply(Est,function(x)x$U))
   estB = t(sapply(Est,function(x)x$B))
-  if(timestep == "quarter"){
-    nsim = nrow(estU)
-    nt = ncol(estU)
-    yrs = unique(floor(as.numeric(colnames(estU))))
-    estB = apply(array(estB,c(nsim,4,nt/4)),c(1,3),mean)
-    estU = apply(array(estU,c(nsim,4,nt/4)),c(1,3),mean)
-    colnames(estB) = colnames(estU) =yrs
-  }
+
   estBMSY = sapply(Est,function(x)x$BMSY)
   estMSY = sapply(Est,function(x)x$MSY)
   estUMSY = estMSY / estBMSY
-  SimSam$U = list(sim = simdata$U, est = estU)
-  SimSam$B = list(sim = simdata$B, est = estB)
+
+  if(timestep == "year"){
+    Usim = simdata$U_y
+    Bsim = simdata$B_y
+  }else if(timestep =="quarter"){
+    Usim = simdata$U_q
+    Bsim = simdata$B_q
+  }
+  SimSam$U = list(sim = Usim, est = estU)
+  SimSam$B = list(sim = Bsim, est = estB)
   SimSam$BMSY = list(sim = simdata$BMSY, est = estBMSY)
   SimSam$MSY = list(sim = simdata$MSY, est = estMSY)
   SimSam$UMSY = list(sim = simdata$UMSY, est = estUMSY)
