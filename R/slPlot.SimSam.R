@@ -17,11 +17,12 @@ SS_ts_bias = function(slt, keep, ylab){
 
   err = ((slt$est[keep,]-slt$sim[keep,])/slt$sim[keep,])*100
   proj_plot(err, as.numeric(colnames(err)),ylab =ylab, y0=T)
+  legend('topleft',legend=paste0("Mean bias = ",round(mean(err)*100,2),"%"),bty='n')
   abline(h=0,lty=2,lwd=2)
 
 }
 
-# slt = obj$B; xlabs = as.numeric(colnames(obj$U$est)); lab ="bio"; denom = 1E3; doleg=T
+# slt = obj$B; xlabs = as.numeric(colnames(obj$U$sim)); lab ="bio"; denom = 1E3; doleg=T
 SS_ts_sim_bias = function(slt, xlabs, sims, ylab, denom, scol, doleg=F){
   ylabline = 2.2; xlabline = 2.2; labcex = 0.8
   ylim=c(0,max(slt$sim[sims,],slt$est[sims,],na.rm=T))/denom
@@ -37,8 +38,10 @@ SS_ts_sim_bias = function(slt, xlabs, sims, ylab, denom, scol, doleg=F){
 slplot.simsam = function(obj, nsimplot=3, scol = c("red","green","blue","black","darkgrey","purple"),labcex = 0.8,Bdenom = 1E3){
 
   nsim = length(obj$BMSY$sim)
-  yrs = as.numeric(colnames(obj$U$est))
+  yrs = round(as.numeric(colnames(obj$U$sim)),2)
   conv = is.conv(obj)
+
+  if(all(!conv))stop("! None of the estimation models converged !")
   sims = ((1:nsim)[conv])[1:nsimplot]
 
   i = 1
@@ -56,7 +59,7 @@ slplot.simsam = function(obj, nsimplot=3, scol = c("red","green","blue","black",
   #SS_pnt_bias(obj$BMSY,conv,"BMSY");  i = dolab(i)
   #SS_pnt_bias(obj$MSY,conv,"MSY");  i = dolab(i)
   #SS_pnt_bias(obj$UMSY,conv,"UMSY");  i = dolab(i)
-  cat(paste0("Assessment did not converge for simulations: ", paste((1:nsim)[!conv],collapse=", "),". ", sum(!conv)," simulations were removed \n"))
+  if(any(!conv))cat(paste0("Assessment did not converge for simulations: ", paste((1:nsim)[!conv],collapse=", "),". ", sum(!conv)," simulations were removed \n"))
 
 }
 
