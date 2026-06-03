@@ -37,8 +37,8 @@ slOM = function(Name = "Short-lived simulation", Agency = "A fishery agency", Au
   #  Name = "Short-lived simulation"; Agency = "A fishery agency"; Author = "A fishery analyst"; Email = "a.person@email.com"; Region = "A fishery management area"; ComplexName = "Short-Lived Complex"; Latitude = NA; Longitude = NA
   #  Sponsor = "A generous funder"; nSim = 4; nYear = 10; pYear = 10; Seasons = 12; CurrentYear = 2026; Interval = 6; Seed = 1; obs = NA; stock = NA; fleet = NA
 
-  om = OM()     # Operating model object
-
+ # om = OM()     # Operating model object
+  om = new('om')
   # Dimensions and labels
   om@Name = Name
   om@Agency = Agency
