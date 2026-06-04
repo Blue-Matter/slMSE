@@ -223,8 +223,10 @@ getL50 = function(OM){
   nage = length(OM@cpars$Len_age[1,,1])
   len = OM@cpars$Len_age[1,2:nage,1]
   mat = OM@cpars$Mat_age[1,2:nage,1]
-  L50 = approx(mat,len,0.5)$y
-  L50_95 = approx(mat,len,0.95)$y - L50
+  suppressWarnings({
+    L50 = approx(mat,len,0.5)$y
+    L50_95 = approx(mat,len,0.95)$y - L50
+  })
   list(L50 = L50, L50_95 = L50_95)
 }
 

@@ -4,14 +4,23 @@
 \alias{GIR}
 \title{A Generic Index Ratio Management Procedure (OpenMSE v2.0)}
 \usage{
-GIR(Data)
+GIR(
+  Data,
+  HCR_ICP = c(0.5, 1.5),
+  HCR_LCP = c(0.5, 1.5),
+  HCR_sens = 1,
+  HCR_up_max = 0.2,
+  HCR_down_max = 0.2,
+  HCR_smooth = 0.2,
+  plot = F
+)
 }
 \arguments{
 \item{Data}{An object of openMSE class 'Data'}
 
-\item{HCR_ICP}{2-position vector. The Index control points. These are a pair of x-axis control points for a hockey-stick control rule. Phrased in terms of the levels of the generic survey index for the last historical year.}
+\item{HCR_ICP}{2-position vector. The Index control points - index relative to last historical year. These are a pair of x-axis control points for a hockey-stick control rule. Phrased in terms of the levels of the generic survey index for the last historical year.}
 
-\item{HCR_LCP}{2-position vector. Management Lever control points. These are a pair of y-axis control points for a hockey-stick control rule. Phrased in terms of the levels of catch over the last historical year.}
+\item{HCR_LCP}{2-position vector. Management Lever control points - TAC relative to Landings in last historical year. These are a pair of y-axis control points for a hockey-stick control rule. Phrased in terms of the levels of catch over the last historical year.}
 
 \item{HCR_sens}{Sensitivity of the response. A value of 1 is proportional.}
 
