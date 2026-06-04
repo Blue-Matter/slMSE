@@ -150,6 +150,11 @@ slSimData = function(obj){
   B_y = t(sapply(1:nSim(obj),function(x, obj){get_sim_By(x, obj)}, obj=obj))
   U_y = apply(Landings_y,1:2,sum)/B_y
 
+  BMSY = apply(obj@Reference@MSY@BMSY,1,sum)
+  MSY = apply(obj@Reference@MSY@MSYLandings,1,sum)
+  UMSY = MSY / BMSY
+  B0 = apply(obj@Unfished@Equilibrium@Biomass[,,1, drop=F],1,sum)
+  BMSY_B0 = BMSY / B0
 
   # Spec quantities
   getmuage=function(x,slt)apply(slot(x,slt)@MeanAtAge, 2, mean)
@@ -167,7 +172,7 @@ slSimData = function(obj){
        nSeason = Seasons, nStock = nStock, nFleet = nFleet,
        nLen = nLen, nYear = nYear, nSim = nSim, CALmids = CALmids, years = years,
        B_y = B_y, B_q = B_q, U_y = U_y, U_q = U_q,
-       BMSY = rep(1,nSim), MSY = rep(1,nSim), UMSY = rep(1,nSim), BMSY_B0 = rep(1,nSim),
+       BMSY = BMSY, MSY = MSY, UMSY = UMSY, BMSY_B0 = BMSY_B0, B0 = B0,
        len_age_guess = len_age_guess, wt_age_guess = wt_age_guess,
        mat_age_guess = mat_age_guess, sel_age_guess = sel_age_guess)
 

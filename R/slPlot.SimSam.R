@@ -17,7 +17,7 @@ SS_ts_bias = function(slt, keep, ylab){
 
   err = ((slt$est[keep,]-slt$sim[keep,])/slt$sim[keep,])*100
   proj_plot(err, as.numeric(colnames(err)),ylab =ylab, y0=T)
-  legend('topleft',legend=paste0("Mean bias = ",round(mean(err)*100,2),"%"),bty='n')
+  legend('topleft',legend=paste0("Mean bias = ",round(mean(err),2),"%"),bty='n')
   abline(h=0,lty=2,lwd=2)
 
 }
@@ -46,7 +46,8 @@ slplot.simsam = function(obj, nsimplot=3, scol = c("red","green","blue","black",
 
   i = 1
   ylabline = 2.2; xlabline = 2.2
-  par(mfrow=c(2,2),mai=c(0.6,0.6,0.2,0.05))
+  par(mai=c(0.55,0.55,0.2,0.05))
+  layout(matrix(c(1,1,1,2,2,2,1,1,1,2,2,2,3,3,3,4,4,4,3,3,3,4,4,4,5,5,6,6,7,7,5,5,6,6,7,7),ncol=6,byrow=T))
 
   # Biomass
   SS_ts_sim_bias(obj$B, yrs, sims, "Biomass (B) (t)", 1E3, scol, T);   i = dolab(i)
@@ -56,9 +57,10 @@ slplot.simsam = function(obj, nsimplot=3, scol = c("red","green","blue","black",
   SS_ts_sim_bias(obj$U, yrs, sims, "Harvest Rate (U)", 1, scol, T);  i = dolab(i)
   SS_ts_bias(obj$U, conv, "U.Est.Err. (E-S)/S %");  i = dolab(i)
 
-  #SS_pnt_bias(obj$BMSY,conv,"BMSY");  i = dolab(i)
-  #SS_pnt_bias(obj$MSY,conv,"MSY");  i = dolab(i)
-  #SS_pnt_bias(obj$UMSY,conv,"UMSY");  i = dolab(i)
+  # MSY quantities
+  SS_pnt_bias(obj$BMSY,conv,"BMSY Est.Err. (E-S)/S %");  i = dolab(i)
+  SS_pnt_bias(obj$MSY,conv,"MSY Est.Err. (E-S)/S %");  i = dolab(i)
+  SS_pnt_bias(obj$UMSY,conv,"UMSY Est.Err. (E-S)/S %");  i = dolab(i)
   if(any(!conv))cat(paste0("Assessment did not converge for simulations: ", paste((1:nsim)[!conv],collapse=", "),". ", sum(!conv)," simulations were removed \n"))
 
 }
@@ -66,5 +68,9 @@ slplot.simsam = function(obj, nsimplot=3, scol = c("red","green","blue","black",
 is.conv=function(obj){
   est = obj$B$est[,1]
   sim = obj$B$sim[,1]
-  !is.na(est) & ((est-sim)/sim) < 10
+  test1 = !is.na(est) & ((est-sim)/sim) < 10
+  est = obj$BMSY$est
+  sim = obj$BMSY$sim
+  test2 = (est-sim)/sim < 10
+  test1 & test2
 }

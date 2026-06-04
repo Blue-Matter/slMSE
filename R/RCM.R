@@ -2,7 +2,7 @@
 
 #  c_oe = 0.05; i_oe = 0.2; C_eq_fac = 1; C_eq_nyrs = 3; nsubyr = 4; Name = "An RCM OM"; R0init = 1E7; M=0.4
 # Len_age = NA; Wt_age = NA; Mat_age = NA; Sel_age = NA
-#  Steepness = 0.8; SRrel = "Ricker"; oe = 0.2; pe = 0.6; proyears = 15; CurrentYear = 2026
+#  Steepness = 0.8; SRrel = 2; oe = 0.2; pe = 0.6; proyears = 15; CurrentYear = 2026
 
 RCM_data = function(sim, simdata, Name = "An RCM OM w data", c_oe = 0.05, i_oe = 0.2,
                     ESS = 50, C_eq_fac = 1, C_eq_nyrs = 5, nsubyr = 4,
@@ -11,7 +11,7 @@ RCM_data = function(sim, simdata, Name = "An RCM OM w data", c_oe = 0.05, i_oe =
                     proyears = 15, CurrentYear = 2026){
 
 
-  nsim = 1
+  nsim = 2
   dat = new('RCMdata')
   nfleet = dim(simdata$Landings_q)[3]
   nyear = dim(simdata$Landings_q)[2]
@@ -107,24 +107,25 @@ do_RCM=function(sim, simdata, mode = "ASPM",Name = "An RCM OM w data", c_oe = 0.
 
   if(plot) plot(fit, Year = tslab, f_nam = fnam, s_name = c("Survey",paste0("CR_index ",fnam)))
 
-  RCM_output(fit, simdata)
+  RCM_output(fit, simdata, Year = tslab, f_nam = fnam, s_name = c("Survey",paste0("CR_index ",fnam)))
 
 }
 
-RCM_output = function(fit, simdata){
+RCM_output = function(fit, simdata, Year, f_nam, s_name){
 
   if(class(fit)!="RCModel")stop("Not an object of class RCModel - an RCM fit")
   fnam = dimnames(simdata$Landings_q)[[3]]
   predts = round(as.numeric(dimnames(simdata$Landings_q)[[2]]),2)
   nts = length(predts)
-  BMSY = rep(1,nts)
-  MSY = rep(0.5,nts)
-  BMSY_B0 = rep(0.5,nts)
-  Brel = rep(0.5,nts)
+  histRCM = Simulate(fit@OM)
+  BMSY = histRCM@Ref$ReferencePoints$BMSY[1]
+  MSY = histRCM@Ref$ReferencePoints$MSY[1]
+  UMSY = MSY / BMSY
+  BMSY_B0 = histRCM@Ref$ReferencePoints$BMSY[1]/histRCM@Ref$ReferencePoints$B0
   B = fit@report[[1]]$B[1:nts]
   C = apply(fit@report[[1]]$Cpred,1,sum)
   U = C/B
-  list(B = B, C = C, U = U, BMSY = BMSY, MSY = MSY, BMSY_B0 = BMSY_B0, predts = predts, fit=fit)
+  list(B = B, C = C, U = U, BMSY = BMSY, MSY = MSY, UMSY = UMSY, BMSY_B0 = BMSY_B0, predts = predts, fit=fit, Year = Year, f_nam = f_nam, s_name= s_name)
 }
 
 

@@ -129,9 +129,9 @@ getprog<-function(page){
 
 # Overview
 
-The management of short-lived species is challenging: a small number of cohorts provides attenuated information about exploitaiton and can generate high natural variability, data lags can prevent appropriately responsive management, environmental drivers of stock status may mask management performance and seasonality in recruitment, growth and survival may need to be accounted for. 
+The management of short-lived species is challenging: a small number of cohorts provides a high degree of natural variability; data lags can prevent appropriately responsive management; environmental drivers of stock status may mask management performance; and seasonality in recruitment, growth and survival may need to be accounted for. 
 
-The slMSE package is a suite of stock and fishery simulation tools for identifying reliable stock assessment methods, conditioning operating models for management strategy evaluation and for the design and testing of candidate management procedures appropriate for short-lived species that may rely on input controls, in-season data collection and in-season management decision making. 
+The slMSE package is a suite of simulation tools for identifying reliable stock assessment methods, conditioning operating models for management strategy evaluation (MSE) and for the design and testing of candidate management procedures appropriate for short-lived species.  
 
 <br>
 
@@ -179,13 +179,15 @@ For many fish stocks, population and fishery dynamics are approximated well by m
 
 For the purposes of this project, we define a short-lived species as one that may not be approximated well by annual population and fishing dynamics and may require the use of in-season data. In broad quantitative terms this is a species that naturally lives for less than three years; has an annual instantaneous mortality of greater than 1.0, for which 95% of individuals naturally die before 36 months. Examples of such species include most stocks of shrimp, squid, octopus and anchovy.
 
-The management challenges of such species are not related to longevity per se, but instead arise due to the relative frequencies of recruitment, data collection and management decision making. A fish that lives to one year and has monthly recruitment, monthly data collection and monthly management interventions is no different mathematically than a fish that lives to 12 years and has annual recruitment data collection and management decision making. However most short-lived species are not managed on a monthly time step. Consider a fish such as a sardine that lives to three years, recruits in a single month of the year and uses data from the previous year for management decision making. That is mathematically equivalent to a fish that lives to 36 years recruits every 12 years, sets advice from data from 12 years ago (the data point before that is 24 years ago) and for which management will be kept constant for 12 years at a time. Rephrased in those terms, it is easy to see why managing such a stock would be challenging. A retrospective analysis of TAC management for such a stock would almost certainly show unacceptable management performance due to those data lags and unresponsive management (unless a very conservative TAC was prescribed).
+The management challenges of such species are not related to longevity per se, but instead arise due to the relative frequencies of recruitment, data collection and management decision making. A fish that lives to one year and has monthly recruitment, monthly data collection and monthly management interventions is no different mathematically than a fish that lives to 12 years and has annual recruitment, data collection and management decision making. However, most short-lived species are not managed on a monthly time step. 
+
+Consider a fish such as a sardine that lives to three years, recruits in a single month of the year and uses data from the previous year for management decision making. That is mathematically equivalent to a fish that lives to 36 years, recruits every 12 years, sets advice for 12 years at a time from data from 12 years ago (the data point before that is 24 years ago). Rephrased in those terms, it is easy to see why managing such a stock would be challenging. A retrospective analysis of TAC management for such a stock would almost certainly show unacceptable management performance due to those data lags and unresponsive management (unless a very conservative TAC was prescribed).
 
 It follows that the ‘short-lived management problem’ is multifaceted and includes one or more of the following:
 
 *	High natural variability in stock level due to few cohorts (perhaps only one) limiting forecasting certainty and lessening impact of alternative management options;
 
-* fewer cohorts retain limited information about past exploitaiton rate and hence the scale of the stock;
+* Fewer cohorts retain limited information about exploitation rate and hence the scale of the stock;
 
 *	Data lags that span a high degree of uncertainty in stock status (available data may be 'out of date' and uninformative about an appropriate current management policy);
 
@@ -193,12 +195,12 @@ It follows that the ‘short-lived management problem’ is multifaceted and inc
 
 *	Environmental drivers of stock level may be more influential than management decisions;
 
-*	Conventional fisheries management reference points that may not be suitable. 
+*	Conventional fisheries management reference points may not be suitable. 
 
 
 ## Squid Fisheries
 
-Squid are ecologically significant species that play important roles in marine ecosystems—as predators and as critical forage for higher trophic level species. Their populations are characterized by short lifespans (typically around one year), rapid growth, semelparous reproduction, and high natural mortality. These biological characteristics lead to strong and often unpredictable fluctuations in abundance that can be closely linked/driven by environmental variability.
+Squid are ecologically significant species that play important roles in marine ecosystems as predators and as critical forage for higher trophic level species. Their populations are characterized by short lifespans (typically around one year), rapid growth and semelparous reproduction. These biological characteristics lead to strong and often unpredictable fluctuations in abundance that can be closely linked/driven by environmental variability.
 
 Traditional stock assessment approaches used for longer-lived finfish often fall short when applied to squid fisheries. Squid’s fast turnover, protracted spawning periods, and responsiveness to short-term environmental changes present unique challenges for developing robust, responsive management strategies. While several squid fisheries worldwide have applied models such as depletion-based models [e.g., jumbo flying squid (Dosidicus gigas) in the Gulf of California and in Chilean fisheries, Japanese common squid (Todarodes pacificus) in Japan, Argentine shortfin squid (Illex argentinus) and Patagonian longfin squid (Doryteuthis gahi) in the Falkland Islands], Bayesian hierarchical DeLury models (e.g., neon flying squid (Ommastrephes bartramii) in the North Pacific Ocean], surplus production models (e.g., SPiCT), per-recruit models and empirical/heuristic models management (see Arkhipkin et al 2021, NPFC, 2025),  most still struggle with data limitations, the apparent need for near-real-time management adjustments and associated high monitoring demands.
 
@@ -266,9 +268,9 @@ The primary target audiences for this work include:
 
 ## Overview
 
-A collection of tools are available in a public slMSE R package that allow users to specify simulation models that can be used to test assessment methods (and operating model conditioning methods), and develop management procedures and then test those using the OpenMSE R libraries. 
+A collection of tools are available in a public slMSE R package that allow users to specify simulation models that can be used to test assessment methods (and operating model conditioning methods), develop candidate management procedures and then test those using the OpenMSE R package. 
 
-The intention of slMSE is to support a scientific process that begins with a collection of available data and information, leads to the consolidation of those in a range of plausible scenarios for system dynamics, this followed by a defensible assessment of the resource, and finally the development and potentially adoption of management procedures that are demonstrably robust to scientific and management uncertainties. 
+The intention of slMSE is to support a scientific process that begins with a collection of available data and information, leads to the consolidation of those in a range of plausible scenarios for system dynamics, followed by a defensible assessment of the resource, and finally the development and potentially adoption of management procedures that are demonstrably robust to scientific and management uncertainties. 
 
 Data & information > (1) Simulated dynamics > (2) Assessment > (3) Management procedure
 
@@ -287,7 +289,7 @@ Figure 1. Suggested methodological steps.
 
 ## Installation
 
-The short-lived tools and MSEtool dependencies can be installed from the slMSE library: 
+The latest versions of slMSE, MSEtool and assessment packages can be installed from GitHub: 
 
 ```{r Installation, eval=F, echo=T}
 
@@ -301,29 +303,29 @@ slMSE::slTest()
 
 ## Specifying Seasonal Operating Models for Simulating Data
 
-The slMSE package comes with functions that specify stock and fleet dynamics. These default to a quarterly, three area model of three stocks that varying in their longevity, maturity, growth, ontogyny, spatial distribution, recruitment seasonality and magnitude, and two fleets of varying selectivity, seasonality, spatial distribution and exploitation rate. 
+The slMSE package includes functions that specify stock and fleet dynamics. These default to a quarterly, three-area model of three sub-stocks that varying in their longevity, maturity, growth, ontogyny, spatial distribution, recruitment seasonality and magnitude, and two fleets of varying selectivity, seasonality, spatial distribution and exploitation rate. 
 
-These are essentially wrapper functions around customizable stock and fleet builders which we will return to below. 
+These are essentially wrapper functions around a set of customizable stock and fleet builder functions which we will return to below. 
 
 First the 'shape' of the simulation needs to be specified: 
 
 ```{r omshape, eval=F, echo=T}
 nYear = 25          # No. historical years
 pYear = 15          # No. projection years
-Seasons = 4         # time steps, subyears/seasons per year (two-monthly)
+Seasons = 4         # Time steps, subyears/seasons per year - this is a quarterly model but could be 12, 52 or 365
 nAreas = 3          # 3 areas used to simulate ontogeny and fleet distribution
-nAges = 8           # calculations run to 2 years
-nSim = 24           # a small number of simulations for demo purposes
-CurrentYear = 2026  # 'Today'
+nAges = 8           # Calculations run to 2 years (8 quarters)
+nSim = 24           # A small number of simulations for demo purposes
+CurrentYear = 2026  # Label for 'Today'
 ```
 
 These are arguments to the generic simulator functions: 
 
-```{r specOM, eval=T, echo=T}
-stock = demo_stocks(nYear, pYear, Seasons, nSim, nAges, CurrentYear) # a list of 3 stocks
-fleet = demo_fleets(nYear, pYear, Seasons, nSim, nAges, stock)       # a list of 2 fleets
+```{r specOM, eval=F, echo=T}
+stock = demo_stocks(nYear, pYear, Seasons, nSim, nAges, CurrentYear) # A list of 3 stocks
+fleet = demo_fleets(nYear, pYear, Seasons, nSim, nAges, stock)       # A list of 2 fleets
 
-om = slOM(stock = stock, fleet = fleet,                  # combine in operating model
+om = slOM(stock = stock, fleet = fleet,                  # Combine in operating model
           ComplexName = "Pacific JFS",
           nSim = nSim, nYear = nYear, pYear = pYear,
           Seasons = Seasons, CurrentYear = CurrentYear,
@@ -331,7 +333,7 @@ om = slOM(stock = stock, fleet = fleet,                  # combine in operating 
 
 ```
 
-This creates an MSEtool (OpenMSE v2.0) compatible operating model of class 'om'
+This creates an MSEtool (OpenMSE v2.0) compatible operating model of class 'om'.
 
 To find out more about these and how they are built you can refer to the in-line help documentation: 
 
@@ -341,22 +343,22 @@ class?om
 ?Stock   # Stock sub-class
 ?Fleet   # Fleet sub-class
 ?Imp     # Implementation model sub-class
-?Obs     # Observatoin model sub-class
+?Obs     # Observation model sub-class
 
 ```
 
 
-To undertake a historical simulation you use the Simulate function and plot what this output looks like: 
+To undertake a historical simulation you use the Simulate function: 
 
-```{r Simulate, eval = T, echo=T}
+```{r Simulate, eval = F, echo=T}
 hist = Simulate(om)   # Historical simulation
 slplot(hist)          # Summary plot of dynamics
 ```
 
-Note that this historical reconstruction can be used to do projections in conventional MSE analyses using openMSE: 
+Note that this operating models and historical reconstruction can be used to do projections in a conventional MSE analysis using OpenMSE: 
 
-```{r OptionalMSE, eval = T, echo = T}
-
+```{r OptionalMSE, eval = F, echo = T}
+library(ggplot2)
 avail('mp')                                      # Available MSEtool MPs
 myMSE = Project(hist, MPs = "CurrentEffort")     # Projection - current effort
 B = Biomass(myMSE)                               # Extract Biomass
@@ -372,40 +374,40 @@ ggplot(Bplot) +                                  # Plot biomass
 
 ```
 
-Instead we will focus on generating simulated data and testing assessment methods.
+For now we will focus on generating simulated data and testing assessment methods. We will return to these operating models scoping tools again below in the section 'Specifying Robustness Operating Models'. 
 
 ## Generating Simulated data
 
-The historical simulation object hist contains a lot of infomation for example: exploitation rate, biomass, spanwing biomass, MSY reference points etc. 
+The historical simulation object 'hist' contains a lot of information for example: exploitation rate, biomass, spawning biomass, MSY reference points etc. 
 
 It also includes simulated datasets (a dataset for each simulation). You can extract those data types that may be typically available to an assessment. In this case these are annual and quarterly catches, catch-length composition data, catch rate indices (vulnerable biomass by fleet) and a fishery independent survey (total biomass). 
 
-```{r OptionalMSE, eval = T, echo = T}
-simdata = slSimData(hist)                        # Generate simulated data
+```{r makeSimData, eval = F, echo = T}
+simdata = slSimData(hist)                        # Extract simulated data
 slplot(simdata)                                  # plot simulated data
 ```
 
-You now have multiple simulated datasets and also some 'true' known simulated quantities in the simdata object. These can be used to fit assessment models to evaluate how well they can estimate simulated quantities such as stock size and exploitation rate. Relevant questions are:
+You now have multiple simulated datasets in the simdata object. These can be used to fit assessment models. The simdata object also includes 'true' known simulated quantities which can be used to evaluate the estimation performance (accuracy and precision) of stock assessments. Relevant questions are:
 
-* What is the correct temporal resolution of the stock assessment model (e.g., annual vs quarterly)
-* What type of assessment model can best approximate stock dynamics (e.g., is a surplus produciton model suitable)
+* What is the correct temporal resolution of the stock assessment model (e.g., annual vs quarterly)?
+* What type of assessment model can best approximate stock dynamics (e.g., is a surplus produciton model suitable)?
 * Can these assessments be reconfigured to performance better?
 
 ### SPiCT (Surplus Production in Continuous Time, DTU Aqua)
 
-SPiCT is a surplus production model using the generalized model of Pella and Tomlinson. It is implemented in TMB, inlcudes the continuous impelmentation of the production equations and can also approximate seasonality. The key advantages of SPiCT are that it is fast, customizable (you can configure it to better approximate simulated dynamics), can include prior information for more robust estimation performance and it can be run on a finer temporal resolution to approximate seasonality. 
+SPiCT is a surplus production model based on the generalized equations of Pella and Tomlinson. It is implemented in TMB, includes the continuous implementation of the production equations and can also approximate seasonality. The key advantages of SPiCT are that it is fast, customizable (there are various ways it can be reconfigured to better approximate simulated dynamics), can include prior information for more robust estimation performance and it can be run on a finer temporal resolution to approximate seasonality. For more information about SPiCT you can visit the [GitHub page](https://github.com/DTUAqua/spict) which includes a vignette and guidelines document.
 
-Lets fit SPiCT to a single simulated dataset:
+Lets fit an annual SPiCT model to a single simulated dataset:
 
 ```{r Spict_single, eval = F, echo=T}
 Sout = do_spict(sim = 1, simdata)     # Fit spict (default settings) for sim 1
 plot(Sout$fit)                        # Generic SPiCT fitting report
 ```
 
-If you take a look at the documentation for do_spict() you will see that a large number of default priors and other assumptions such as observaiton error and process error, were imposed on this fit. You can fiddle around with these if you like - maybe you can fit the simulated data better?
+If you take a look at the documentation for do_spict() you will see that a large number of default priors and other assumptions such as observation error and process error, were imposed on this fit. You can fiddle around with these if you like - maybe you can fit the simulated data better?
 
 ```{r spict_help, eval = F, echo=T}
-?do_spict                     # in-line slMSE help
+?do_spict                     # In-line slMSE help
 ```
 
 The focus of this package however is the simulation testing of assessment estimation performance. Let's do a full sim-sam (simulation - stock assessment model) for all 24 simulations and summarize the estimation performance:
@@ -455,19 +457,21 @@ slplot(SS_spict_q)                                    # plot sim sam results
 
 ```
 
-This might be a good time to think about how to reconfigure this spatially-aggregated, single-stock, single-fleet assessment model to better approximate the dynamics of the spatial, multi-stock, multi-fleet simulation model...
+This might be a good time to think about how to reconfigure this spatially-aggregated, biomass-aggregated, single-stock, single-fleet assessment model to better approximate the dynamics of the spatial, multi-stock, multi-fleet simulation model...
 
 ### RCM (Rapid Conditioning Model, of SAMtool, Huynh 2026)
 
 The openMSE libraries include SAMtool (Stock Assessment Methods toolkit of Quang Huynh). Inlcuded in that package is RCM, a flexible, rapid operating model conditioning approach, implemented in TMB that can be run in a wide variety of configurations for varying input data types. 
 
-Here we will simulation test RCM in two modes which are possibly more appropriate for high-season short-lived stocks such as Neon Flying Squid and Jumbo Flying Squid: Age-Structured Production Model (ASPM) and Statistical Catch at Length (SCAL). ASPMs are just the typical age-structured stock assessment but with user-specified vectors for selectivity. Such a model correctly accounts for lags introduced by cohorts and can accomodate assumptions not well approximated by production models such as large mismatches in maturity-at-age ogives and selectivity-at-age. 
+Here we will simulation test RCM in two modes that may be appropriate for high-season short-lived stocks such as Neon Flying Squid and Jumbo Flying Squid: an Age-Structured Production Model (ASPM) and a Statistical Catch at Length (SCAL) model. 
 
-SCAL models are identical to the ASPMs but instead of user-specified fishery selectivity these estimate selectivity from catch-length composition data. Typically length data for short-lived stocks do not include much information about exploitation due to the small number of cohorts and high degree of natural mortality. Typically, size composition data will have limited impact on the estimation of scale but can inform selectivity-dependent reference points such as FMSY and can also prevent assessments from estimating spurious recruitments (this can be an issue with ASPM models).
+ASPMs are based on the typical age-structured equations of a statistical catch-at-age or catch-at-length stock assessment but are fitted to abundance indices and catches only. Selectivity is user-specified. As in a typical age-structured assessment, the user also specifies age- or length- based vectors for natural mortality rate, somatic growth, maturity (spawning fraction) and also often the degree of resilience in the stock-recruitment function. In this way, the ASPM accounts for lags introduced by maturation and can accommodate assumptions not well approximated by production models such as large mismatches in maturity-at-age and selectivity-at-age. 
 
-By default both ASPM and SCAL models are implemented on a quarterly time steps (there would not be sufficient resolution of age and time for a stock that lives to only two years). 
+SCAL models are identical to the ASPMs but instead of user-specified fishery selectivity this is estimated from catch-length composition data. Typically length data for short-lived stocks do not contain much information about exploitation rate due to high variability in length at age and the small number of cohorts (very little 'signature' in the attenuation of size or age structure) and high degree of natural mortality. Typically, size composition data will have limited impact on the estimation of scale but can inform selectivity-dependent reference points such as FMSY and can also prevent assessments from estimating spurious recruitments (which can be an issue with ASPM models).
 
-Let's see how they simulation test, starting with ASPM:
+By default both ASPM and SCAL models are implemented on a quarterly time steps. An annual time step would negate the potential benefits of using an age-structured model instead of a surplus production model since there would be a comparable lack of model age structure. 
+
+Let's see how these assessment models simulation test, starting with ASPM:
 
 ```{r RCM_ASPM, eval = F, echo = T}
 # One simulation
@@ -476,23 +480,23 @@ plot(Rout$fit)
 
 # Sim-Sam all simulations
 SS_RCM_ASPM = SimSam_RCM(simdata, Name = "JFS demo",
-                    mode = "ASPM",
-                    c_oe = 0.05,
-                    i_oe = 0.2,
-                    ESS = 50,
-                    C_eq_fac = 1,
-                    C_eq_nyrs = 5,
-                    nsubyr = 4,
-                    R0init = 1E7,
-                    M = 0.5,
-                    Len_age = NA,
-                    Wt_age = NA,
-                    Mat_age = NA,
-                    Sel_age = NA,
-                    Steepness = 0.8,
-                    SRrel = 2,
-                    pe = 5.0,
-                    max_F = 3.0)
+                    mode = "ASPM",          # No length data, sel user specified
+                    c_oe = 0.05,            # Catch obs err (log normal sd)
+                    i_oe = 0.15,            # Index obs err 
+                    ESS = 50,               # Effective sample size length comps
+                    C_eq_fac = 1,           # Ratio for Initial Equilbrm. catch
+                    C_eq_nyrs = 5,          # Initial No.Equilibrium catch years
+                    nsubyr = 4,             # A quarterly model
+                    R0init = 1E7,           # Initial guess for unfished recrmt.
+                    M = 0.5,                # Quarterly nat. mort. rate. 
+                    Len_age = NA,           # These age vectors should be 
+                    Wt_age = NA,            #   be specified but when set to NA
+                    Mat_age = NA,           #   the mean across all simulations
+                    Sel_age = NA,           #   is used. 
+                    Steepness = 0.8,        # Steepness parameter - resilience
+                    SRrel = 2,              # Ricker stock rec rel. 1 is B-H
+                    pe = 5.0,               # Log sd penalty on rec devs (v low)
+                    max_F = 3.0)            # Maximum quarterly apical exp rate
 
 slplot(SS_RCM_ASPM)
 ```
@@ -505,33 +509,71 @@ plot(Rout$fit)
 
 # Sim-Sam all simulations
 SS_RCM_SCAL = SimSam_RCM(simdata, Name = "JFS demo",
-                    mode = "SCAL",
-                    c_oe = 0.05,
-                    i_oe = 0.15,
-                    ESS = 5,
-                    C_eq_fac = 1,
-                    C_eq_nyrs = 5,
-                    nsubyr = 4,
-                    R0init = 1E7,
-                    M = 0.5,
-                    Len_age = NA,
-                    Wt_age = NA,
-                    Mat_age = NA,
-                    Sel_age = NA,
-                    Steepness = 0.9,
-                    SRrel = 2,
-                    pe = 5.0,
-                    max_F = 3.0)
+                         mode = "ASPM",    # Length data, Selectivity estimated
+                         c_oe = 0.05,      # Catch obs err (log normal sd)
+                         i_oe = 0.15,      # Index obs err 
+                         ESS = 50,         # Effective sample size length comps
+                         C_eq_fac = 1,     # Ratio for Initial Equilbrm. catch
+                         C_eq_nyrs = 5,    # Initial No.Equilibrium catch years
+                         nsubyr = 4,       # A quarterly model
+                         R0init = 1E7,     # Initial guess for unfished recrmt.
+                         M = 0.5,          # Quarterly nat. mort. rate. 
+                         Len_age = NA,     # These age vectors should be 
+                         Wt_age = NA,      #   be specified but when set to NA
+                         Mat_age = NA,     #   the mean across all simulations
+                         Sel_age = NA,     #   is used. 
+                         Steepness = 0.8,  # Steepness parameter - resilience
+                         SRrel = 2,        # Ricker stock rec rel. 1 is B-H
+                         pe = 5.0,         # Log sd penalty on rec devs (v low)
+                         max_F = 3.0)      # Maximum quarterly apical exp rate
 
 slplot(SS_RCM_SCAL)
 
 ```
 
-## Conditioning an operating model 
+There are various ways to calibrate these models to better estimate the scale of the simulated stock. Key inputs to try adjusting are M, steepness and the index observation error (i_oe). In general, increasing steepness values and reducing index observation error will lead to the estimation of a smaller stock. 
+
+## Conditioning Reference Set Operating Models 
+
+The purpose of MSE is to simulation test candidate management procedures (MPs - a rule for calculating management advice from data) and potentially select an MP that can meet management objectives robustly. 
+
+The typical approach for this simulation testing is to establish operating models of system dynamics that are credible empirically. This usually involves conditioning operating models on data. In some cases, operating model conditioning is done with custom models such as JJM (Jim Ianelli's custom Pacific Jack Mackerel assessment model) or (M3, the multi-stock, seasonal, spatial model for Atlantic Bluefin Tuna MSE). However, in other cases conventional stock assessmments such as Stock Synthesis 3 are used to fit operating models, as was the case for the North Atlantic Swordfish MSE and the Western Skipjack Tuna MSE. 
+
+The OpenMSE package has a number of tools for converting such assessments to operating models such as SS2OM (Stock Synthesis) and the more generic Assess2OM (input is a list of age-based arrays by simulation and year). 
+
+OpenMSE also includes RCM. Although it was tested in a kind of 'assessment model' above, RCM was expressly designed to condition operating models. It follows that an approach to conditioning operating models for a short-lived stock would be to simulate a very wide range of possible stock and fishery dynamics (as above), configure an RCM model that can suitably estimate key aspects of stock and fishery dynamics and then use RCM. 
+
+It turns out this is straightforward because after estimation, RCM returns an complete OpenMSE operating model that can be used for projections. 
+
+Normally we would be submitting real fishery data to the RCM. In lieu of those data, for the purposes of this demo RCM will be fitted to simulation 1 of the simulated data above:
+
+```{r RCM_cond_1, eval=F, echo=T}
+
+fit = do_RCM(1, simdata, mode = "ASPM")$fit
+
+slOMprep (fit@OM) # Upgrades to OpenMSE v2.0 om and adds recruitment seasonality to projections
+
+
+myOM = ConvertOM(fit@OM) 
+myOM@Stock@Depletion = NULL # needed
+Project(myOM,"")
+
+```
+
+
+
+
+
+## Specifying Robustness Operating Models
+
+
+
 
 ## Specifying Projection dynamics
 
 ## Developing In-Season Management Procedures
+
+that may rely on input controls, in-season data collection and in-season management decision making. 
 
 ## Including Environmental Drivers of Stock Productivity
 
