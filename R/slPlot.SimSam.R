@@ -7,6 +7,7 @@ SS_pnt_bias = function(slt,keep, xlab,breaks=20,labcex = 0.8){
   if(xlim[2]<0)xlim[2] = 0
   hist(err,xlim = xlim, breaks=breaks, xlab="", ylab="",main="");grid()
   abline(v=0,lty=2,lwd=2)
+  legend('topright',legend=paste0("Est. Bias: ",round(mean(err),2),"%"),bty='n')
   mtext("Freq. (nsim)",2,line=ylabline, cex=labcex); mtext(xlab,1,line=xlabline, cex=labcex)
 
 
@@ -17,7 +18,7 @@ SS_ts_bias = function(slt, keep, ylab){
 
   err = ((slt$est[keep,]-slt$sim[keep,])/slt$sim[keep,])*100
   proj_plot(err, as.numeric(colnames(err)),ylab =ylab, y0=T)
-  legend('topleft',legend=paste0("Mean bias = ",round(mean(err),2),"%"),bty='n')
+  legend('topright',legend=paste0("Mean Est. bias: ",round(mean(err),2),"%"),bty='n')
   abline(h=0,lty=2,lwd=2)
 
 }
@@ -35,7 +36,7 @@ SS_ts_sim_bias = function(slt, xlabs, sims, ylab, denom, scol, doleg=F){
 }
 
 
-slplot.simsam = function(obj, nsimplot=3, scol = c("red","green","blue","black","darkgrey","purple"),labcex = 0.8,Bdenom = 1E3){
+slplot.simsam = function(obj, nsimplot=3, scol = c("red","green","blue","black","darkgrey","purple"), labcex = 0.8, Bdenom = 1E3){
 
   nsim = length(obj$BMSY$sim)
   yrs = round(as.numeric(colnames(obj$U$sim)),2)

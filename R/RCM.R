@@ -16,10 +16,10 @@ RCM_data = function(sim, simdata, Name = "An RCM OM w data", c_oe = 0.05, i_oe =
   nfleet = dim(simdata$Landings_q)[3]
   nyear = dim(simdata$Landings_q)[2]
 
-  if(is.na(Wt_age[1])){Wt_age = c(0,simdata$wt_age_guess); cat("Weight at age not specified, taking a bad guess from simulations (averaged over stocks and simulations) \n")}
-  if(is.na(Len_age[1])){Len_age = c(0,simdata$len_age_guess); cat("Length at age not specified, taking a bad guess from simulations (averaged over stocks and simulations) \n")}
-  if(is.na(Mat_age[1])){Mat_age = c(0,simdata$mat_age_guess); cat("Maturity at age not specified, taking a bad guess from simulations (averaged over stocks and simulations) \n")}
-  if(is.na(Sel_age[1])){Sel_age = c(0,simdata$sel_age_guess); cat("Selectivity at age not specified, taking a bad guess from simulations (averaged over stocks and simulations) \n")}
+  if(is.na(Wt_age[1])){  Wt_age  = c(0, simdata$wt_age_guess);  cat("Weight at age not specified, taking a bad guess from simulations (averaged over stocks and simulations) \n")}
+  if(is.na(Len_age[1])){ Len_age = c(0, simdata$len_age_guess); cat("Length at age not specified, taking a bad guess from simulations (averaged over stocks and simulations) \n")}
+  if(is.na(Mat_age[1])){ Mat_age = c(0, simdata$mat_age_guess); cat("Maturity at age not specified, taking a bad guess from simulations (averaged over stocks and simulations) \n")}
+  if(is.na(Sel_age[1])){ Sel_age = c(0, simdata$sel_age_guess); cat("Selectivity at age not specified, taking a bad guess from simulations (averaged over stocks and simulations) \n")}
 
   # Landings
   dat@Chist = simdata$Landings_q[sim,,]
@@ -123,7 +123,7 @@ RCM_output = function(fit, simdata, Year, f_nam, s_name){
   UMSY = MSY / BMSY
   BMSY_B0 = histRCM@Ref$ReferencePoints$BMSY[1]/histRCM@Ref$ReferencePoints$B0
   B = fit@report[[1]]$B[1:nts]
-  C = apply(fit@report[[1]]$Cpred,1,sum)
+  C = apply(fit@data@Chist,1,sum) # observed catches (as in sim test) vs predicted catches: apply(fit@report[[1]]$Cpred,1,sum)
   U = C/B
   list(B = B, C = C, U = U, BMSY = BMSY, MSY = MSY, UMSY = UMSY, BMSY_B0 = BMSY_B0, predts = predts, fit=fit, Year = Year, f_nam = f_nam, s_name= s_name)
 }
@@ -220,8 +220,9 @@ fill_OM = function(OM){
 }
 
 getL50 = function(OM){
-  len = OM@cpars$Len_age[1,,1]
-  mat = OM@cpars$Mat_age[1,,1]
+  nage = length(OM@cpars$Len_age[1,,1])
+  len = OM@cpars$Len_age[1,2:nage,1]
+  mat = OM@cpars$Mat_age[1,2:nage,1]
   L50 = approx(mat,len,0.5)$y
   L50_95 = approx(mat,len,0.95)$y - L50
   list(L50 = L50, L50_95 = L50_95)

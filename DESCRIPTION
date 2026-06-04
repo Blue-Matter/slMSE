@@ -1,7 +1,7 @@
 Package: slMSE
 Type: Package
 Title: Tools for Simulation Testing, Stock Assessment and MSE for Short-Lived Species.  
-Version: 0.2.27
+Version: 0.2.32
 Authors@R: c(
     person(
       "Tom", "Carruthers",
@@ -9,13 +9,14 @@ Authors@R: c(
       role = c("aut", "cre")
     )
   )
-Description: support a scientific process that begins with a collection of available data and information, 
+Description: Support a scientific process that begins with a collection of available data and information, 
     leads to the consolidation of those in a range of plausible scenarios for system dynamics, 
     this followed by a defensible assessment of the resource, and finally the development and potentially 
     adoption of management procedures that are demonstrably robust to scientific and management uncertainties.
 License: GNU-3
 Encoding: UTF-8
 LazyData: true
+LazyLoad: true
 Depends:
   DT, openMSE, viridis
 RoxygenNote: 7.3.3

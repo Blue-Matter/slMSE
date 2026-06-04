@@ -37,6 +37,14 @@ slplot.hist = function(obj, scol = c("red","green","blue","black","darkgrey","pu
   mtext("Age (years)",1,line=xlabline, cex=labcex); mtext("Survival",2,line=ylabline, cex=labcex)
   i = dolab(i)
 
+  # S-R
+  rec = sapply(obj@Number,function(x)apply(x[,1,,],2,mean))
+  arec = apply(array(rec,c(Seasons(obj),nYear(obj),nStock(obj))),2:3,sum) / recdenom
+  SBt = get_tot_ann_SB(obj)/Bdenom
+  matplot(SBt,arec,col=scol,xlim=c(0,max(SBt)*1.025),ylim=c(0,max(arec)*1.025),type="p",pch=3,xlab="",ylab="");grid()
+  mtext("Mean Ann. Spawn. Bio. (t)",1,line=xlabline, cex=labcex); mtext("Total Ann. Recrt. (m)",2,line=ylabline, cex=labcex)
+  i = dolab(i)
+
   # Recruitment
 
   rec = sapply(obj@Number,function(x)apply(x[,1,,],2,mean))
@@ -174,6 +182,7 @@ get_spat_ann_B = function(hist){
 
 
 get_tot_ann_B = function(hist)  apply(array(apply(hist@Biomass,3:2,mean),c(Seasons(hist),nYear(hist),nStock(hist))),c(2,3),mean)
+get_tot_ann_SB = function(hist)  apply(array(apply(hist@SBiomass,3:2,mean),c(Seasons(hist),nYear(hist),nStock(hist))),c(2,3),mean)
 
 
 get_spat_age_B = function(hist){
