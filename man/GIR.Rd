@@ -14,7 +14,8 @@ GIR(
   HCR_smooth = 0.2,
   plot = F,
   onlyHCR = F,
-  debugfile = NA
+  debugfile = NA,
+  debugyr = 2028
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ GIR(
 \item{onlyHCR}{Boolean. Should only the HCR be plotted?}
 
 \item{debugfile}{Character string. Filename of where to print Data object each iteration. Ignored if NA.}
+
+\item{debugyr}{Year (or fraction of year) for reporting the debugfile.}
 }
 \description{
 A function for calculating TAC management advice

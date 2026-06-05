@@ -293,11 +293,33 @@ The latest versions of slMSE, MSEtool and assessment packages can be installed f
 
 ```{r Installation, eval=F, echo=T}
 
+install.packages('openMSE')
+install.packages('ggplot2')
+
+# Requires Rtools:
 remotes::install_github("Blue-Matter/MSEtool", ref= "prelease") # Latest version of MSEtool
 remotes::install_github("Blue-Matter/slMSE")                    # Latest version of slMSE
 remotes::install_github("DTUAqua/spict/spict")                  # SPiCT assessment
 
-slMSE::slTest()
+```
+
+To run the following scripts you will need to load up the following packages:
+
+
+```{r packageload, eval=T,echo=F, results = 'hide', message=FALSE}
+library(openMSE)
+library(slMSE)
+library(spict)
+library(ggplot2)
+
+```
+
+
+```{r packageload2, eval=F,echo=T}
+library(openMSE)
+library(slMSE)
+library(spict)
+library(ggplot2)
 
 ```
 
@@ -309,7 +331,8 @@ These are essentially wrapper functions around a set of customizable stock and f
 
 First the 'shape' of the simulation needs to be specified: 
 
-```{r omshape, eval=F, echo=T}
+```{r omshape, eval=T, echo=F}
+
 nYear = 25          # No. historical years
 pYear = 15          # No. projection years
 Seasons = 4         # Time steps, subyears/seasons per year - this is a quarterly model but could be 12, 52 or 365
@@ -321,7 +344,7 @@ CurrentYear = 2026  # Label for 'Today'
 
 These are arguments to the generic simulator functions: 
 
-```{r specOM, eval=F, echo=T}
+```{r specOM, eval=T, echo=F}
 stock = demo_stocks(nYear, pYear, Seasons, nSim, nAges, CurrentYear) # A list of 3 stocks
 fleet = demo_fleets(nYear, pYear, Seasons, nSim, nAges, stock)       # A list of 2 fleets
 
@@ -350,14 +373,14 @@ class?om
 
 To undertake a historical simulation you use the Simulate function: 
 
-```{r Simulate, eval = F, echo=T}
+```{r Simulate, eval = T, echo=T, message=FALSE}
 hist = Simulate(om)   # Historical simulation
 slplot(hist)          # Summary plot of dynamics
 ```
 
 Note that this operating models and historical reconstruction can be used to do projections in a conventional MSE analysis using OpenMSE: 
 
-```{r OptionalMSE, eval = F, echo = T}
+```{r OptionalMSE, eval = T, echo = T, message=FALSE}
 library(ggplot2)
 avail('mp')                                      # Available MSEtool MPs
 myMSE = Project(hist, MPs = "CurrentEffort")     # Projection - current effort
@@ -382,7 +405,7 @@ The historical simulation object 'hist' contains a lot of information for exampl
 
 It also includes simulated datasets (a dataset for each simulation). You can extract those data types that may be typically available to an assessment. In this case these are annual and quarterly catches, catch-length composition data, catch rate indices (vulnerable biomass by fleet) and a fishery independent survey (total biomass). 
 
-```{r makeSimData, eval = F, echo = T}
+```{r makeSimData, eval = T, echo = T}
 simdata = slSimData(hist)                        # Extract simulated data
 slplot(simdata)                                  # plot simulated data
 ```
@@ -399,20 +422,20 @@ SPiCT is a surplus production model based on the generalized equations of Pella 
 
 Lets fit an annual SPiCT model to a single simulated dataset:
 
-```{r Spict_single, eval = F, echo=T}
+```{r Spict_single, eval = T, echo=T}
 Sout = do_spict(sim = 1, simdata)     # Fit spict (default settings) for sim 1
 plot(Sout$fit)                        # Generic SPiCT fitting report
 ```
 
 If you take a look at the documentation for do_spict() you will see that a large number of default priors and other assumptions such as observation error and process error, were imposed on this fit. You can fiddle around with these if you like - maybe you can fit the simulated data better?
 
-```{r spict_help, eval = F, echo=T}
+```{r spict_help, eval = T, echo=T}
 ?do_spict                     # In-line slMSE help
 ```
 
 The focus of this package however is the simulation testing of assessment estimation performance. Let's do a full sim-sam (simulation - stock assessment model) for all 24 simulations and summarize the estimation performance:
 
-```{r Spict_SimSam, eval = F, echo = T}
+```{r Spict_SimSam, eval = T, echo = T, message = FALSE}
 # Sim-Sam all simulations
 SS_spict = SimSam_spict(simdata, timestep = "year",   # annual sim sam
                         parallel = T,                 # use parallel processing
@@ -434,7 +457,7 @@ That is the result for the annual model with the configuration (priors, errors e
 
 Lets try a quarterly assessment instead:
 
-```{r Spict_SimSam_q, eval = F, echo = T}
+```{r Spict_SimSam_q, eval = T, echo = T, message = FALSE}
 # One simulation
 Sout_q = do_spict(sim = 1, simdata, timestep = "quarter", dteuler = 0.05)
 plot(Sout_q$fit)                                  # generic SPiCT fitting report
@@ -477,7 +500,9 @@ Let's see how these assessment models simulation test, starting with ASPM:
 # One simulation
 Rout = do_RCM(1, simdata)   # fit RCM default args in ASPM model for sim 1
 plot(Rout$fit)
+```
 
+```{r RCM_ASPM2, eval = T, echo = T, message = FALSE}
 # Sim-Sam all simulations
 SS_RCM_ASPM = SimSam_RCM(simdata, Name = "JFS demo",
                     mode = "ASPM",          # No length data, sel user specified
@@ -506,7 +531,9 @@ Now SCAL:
 ```{r RCM_SCAL, echo=T, eval = F}
 Rout = do_RCM(1, simdata, mode = "SCAL") # fit RCM SCAL model for sim 1
 plot(Rout$fit)
+```
 
+```{r RCM_SCAL2, echo=T, eval = T, message = FALSE}
 # Sim-Sam all simulations
 SS_RCM_SCAL = SimSam_RCM(simdata, Name = "JFS demo",
                          mode = "ASPM",    # Length data, Selectivity estimated
@@ -547,38 +574,106 @@ It turns out this is straightforward because after estimation, RCM returns an co
 
 Normally we would be submitting real fishery data to the RCM. In lieu of those data, for the purposes of this demo RCM will be fitted to simulation 1 of the simulated data above:
 
-```{r RCM_cond_1, eval=F, echo=T}
+```{r RCM_cond_1, eval=T, echo=T, message = FALSE}
 
-fit = do_RCM(1, simdata, mode = "ASPM")$fit
+OM = RCM_data(1, simdata, "Fit to sim data in lieu of real data",
+              M = 0.5,                # Quarterly natural mortality rate
+              R0init = 1E7,           # Initial value for unfished recruitment
+              Steepness = 0.7,        # Assumed steepness of Ricker SRR
+              i_oe  = 0.1,            # 10% CV on abundance indices
+              ESS = 25,               # Effective Sample Size of 25 pa for Lcomp
+              nSim = 16)              # Make OM 16 simulations big
 
-slOMprep (fit@OM) # Upgrades to OpenMSE v2.0 om and adds recruitment seasonality to projections
+
+fit = RCM(OM,                         # OM is an operating model
+          OM@cpars$Data,              # That has the real data appended
+          s_selectivity=c("B",1,2),   # Biomass survey, fleet 1 and 2 CPUE
+          max_F = 3.0, mean_fit = T,  # report on a single fit to mean params
+          condition = "catch",        # remove catch exactly
+          cores = 8,                  # run in parallel
+          resample = T,               # resample nsim from the var-covar matrix
+          drop_nonconv = T)           # drop any non converged fits
+
+myOM = Seasonality(fit@OM, Seasons = 4) # Add seasonality in dynamics
+
+hist = Simulate(myOM)                 # Historical reconstruction
+
+```
+
+Now that we have a conditioned seasonal operating model we can test management procedures. 
+
+OpenMSE comes with a few examples:
 
 
-myOM = ConvertOM(fit@OM) 
-myOM@Stock@Depletion = NULL # needed
-Project(myOM,"")
+```{r availmp, eval=T, echo=T}
+avail('mp')
+```
+
+These are pretty basic but the OpenMSE selection will grow with future releases (please make requests on the MSEtool GitHub Issues page!)
+
+The slMSE packages comes with a Generic Index Ratio (GIR) management procedure of the type used to provide advice in stocks such as Atlantic Bluefin Tuna and North Atlantic Swordfish. 
+
+Essentially the MP aims to adjust TACs based on an index of abundance. The MP is calibrated such that TAC advice is relative to catches in the last historical year (e.g. 120 tons in 2026) and future index levels in the last historical year (e.g. 36.1821 in 2026). The MP is names 'generic' because we are not supplying an observed historical index of abundance but rather using the internally generated relative biomass index. It is trivial to add real data and simulate the statistical properties of a real index, we just don't have these!
+
+To find out more about GIR you can use the in-line help:
+
+
+```{r GIR_Help, echo=T, eval = T}
+?GIR
+```
+
+The GIR has a number of features. It can smooth indices with a polynomial to remove noise from signal, it can limite upward and downward changes in TAC and can use control points that impact how advice will be generated.
+
+We can actually plot a GIR configuration by modifying the function (to plot) and using an example dataset that was loaded with slMSE:
+
+```{r GIR_HCR, echo=T, eval = T, message = FALSE}
+
+plotGIR = GIR   # copy function
+formals(plotGIR)$plot = T
+
+par(mfrow=c(1,2))
+plotGIR(Example_Data)
+
+```
+
+Lets run the default GIR MP along with a version 'myGIR' that we have modified:
+
+```{r GIRMSE, eval=T, echo = T, message = FALSE}
+myGIR= GIR                                # Copy Generic Index Ratio MP
+formals(myGIR)$HCR_ICP = c(0.5, 2)        # Below 50% historical index there is
+formals(myGIR)$HCR_LCP = c(0, 0.8)        #     zero catch, max catch 80% hist
+formals(myGIR)$HCR_up_max = 0.5           # Maximum upward adjustment of 50%
+formals(myGIR)$HCR_down_max = 0.5         # Maximum downward adjustment of 50%
+class(myGIR) = 'mp'                       # Assign correct class
+
+anMSE = Project(hist, c("GIR","myGIR"))   # Closed-loop projections
+slplot(anMSE)                             # MSE results
 
 ```
 
 
 
-
-
 ## Specifying Robustness Operating Models
 
+Coming soon!
 
+## Specifying Alternative Projection dynamics
 
-
-## Specifying Projection dynamics
+Coming soon!
 
 ## Developing In-Season Management Procedures
 
-that may rely on input controls, in-season data collection and in-season management decision making. 
+Coming soon!
+
+"that may rely on input controls, in-season data collection and in-season management decision making." 
 
 ## Including Environmental Drivers of Stock Productivity
 
+Coming soon!
+
 ## Quantifying Appropriate Fishery Management Reference Points
 
+Coming soon!
 
 <br>
 
@@ -588,9 +683,15 @@ that may rely on input controls, in-season data collection and in-season managem
 
 ## Neon Flying Squid
 
+TBD
+
 ## Jumbo Flying Squid
 
+TBD
+
 ## Deep Water Red Shrimp
+
+TBD
 
 <br>
 

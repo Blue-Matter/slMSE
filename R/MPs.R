@@ -39,15 +39,20 @@ class(Eff) = "mp"
 #' @param plot Boolean. Should plots be produced that explain MP calculations (e.g. HCRs)?
 #' @param onlyHCR Boolean. Should only the HCR be plotted?
 #' @param debugfile Character string. Filename of where to print Data object each iteration. Ignored if NA.
+#' @param debugyr Year (or fraction of year) for reporting the debugfile.
 #' @examples
 #' GIR(Example_Data)
 #' @author T. Carruthers
 #' @export
 GIR = function(Data, HCR_ICP = c(0.5, 1.5), HCR_LCP = c(0.5, 1.5), HCR_sens = 1,
                HCR_up_max = 0.2, HCR_down_max = 0.2, HCR_smooth = 0.2,
-               plot = F, onlyHCR = F, debugfile = NA){
+               plot = F, onlyHCR = F, debugfile = NA, debugyr = 2028){
 
-  if(!is.na(debugfile))saveRDS(Data,debugfile)
+  if(!is.na(debugfile) & max(Data@Years+1E-5)>debugyr){
+    Example_Data = Data
+    save(Example_Data, file = debugfile)
+    stop(paste0("Debug data file written to ",debugfile))
+  }
   ad = Advice()
   # other things can go in here!
   ad = do_HCR(Data, HCR_ICP, HCR_LCP, HCR_sens, HCR_up_max, HCR_down_max,
@@ -157,7 +162,7 @@ get_dims = function(Data){
 
 
 get_season = function(Data){
-  rep(1:4,1000)[max(Data@Years)-Data@YearLH+1] # This is the season following the data of this season - so one time step ahead and the correct index for TAC and Effort distribution
+  rep(1:4,1000)[length(Data@Years)] # This is the season following the data of this season - so one time step ahead and the correct index for TAC and Effort distribution
 }
 
 refhistts = function(Data, Season){ match(Data@YearLH, Data@Years) - (4-Season)}
