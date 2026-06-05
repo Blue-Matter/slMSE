@@ -8,7 +8,7 @@ RCM_data = function(sim, simdata, Name = "An RCM OM w data", c_oe = 0.05, i_oe =
                     ESS = 50, C_eq_fac = 1, C_eq_nyrs = 5, nsubyr = 4,
                     R0init, M, Len_age = NA, Wt_age = NA, Mat_age = NA, Sel_age = NA,
                     Steepness, SRrel = 2, pe = 0.6,  # SRrel = 1 is B-H, SRrel = 2 is Ricker
-                    proyears = 15, CurrentYear = 2026){
+                    proyears = 15, CurrentYear = 2026, nSim = 1){
 
 
   nsim = 2
@@ -71,6 +71,7 @@ RCM_data = function(sim, simdata, Name = "An RCM OM w data", c_oe = 0.05, i_oe =
 
   # Nuisance slots
   OM = fill_OM(OM)
+  OM@nsim = nSim
 
   OM
 }
@@ -220,9 +221,9 @@ fill_OM = function(OM){
 }
 
 getL50 = function(OM){
-  nage = length(OM@cpars$Len_age[1,,1])
-  len = OM@cpars$Len_age[1,2:nage,1]
-  mat = OM@cpars$Mat_age[1,2:nage,1]
+
+  len = OM@cpars$Len_age[1,,1]
+  mat = OM@cpars$Mat_age[1,,1]
   suppressWarnings({
     L50 = approx(mat,len,0.5)$y
     L50_95 = approx(mat,len,0.95)$y - L50

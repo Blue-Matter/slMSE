@@ -12,7 +12,9 @@ GIR(
   HCR_up_max = 0.2,
   HCR_down_max = 0.2,
   HCR_smooth = 0.2,
-  plot = F
+  plot = F,
+  onlyHCR = F,
+  debugfile = NA
 )
 }
 \arguments{
@@ -30,7 +32,11 @@ GIR(
 
 \item{HCR_smooth}{The effective number of parameters of a polynomial smoother applied to the input indices. Defaults to NA - raw data. A value of 0.1 means that there will be length(Index)*0.1 number of smoothing parameters. Hence, higher values are less smoothing. This parameterization keeps smoothing consistent as the length of the time series increases in projections.}
 
-\item{plot}{Should plots be produced that explain MP calculations (e.g. HCRs)? Boolean.}
+\item{plot}{Boolean. Should plots be produced that explain MP calculations (e.g. HCRs)?}
+
+\item{onlyHCR}{Boolean. Should only the HCR be plotted?}
+
+\item{debugfile}{Character string. Filename of where to print Data object each iteration. Ignored if NA.}
 }
 \description{
 A function for calculating TAC management advice

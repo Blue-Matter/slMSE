@@ -1,0 +1,18 @@
+MP: fakeMP2
+2029
+
+MP `fakeMP2` Error
+Data: An RCM OM w data
+Simulation: 1
+Year: 2029
+Error: Error in MPfunction(Data = Data) : object 'outfile' not found
+
+MP: fakeMP2
+2029
+
+MP `fakeMP2` Error
+Data: An RCM OM w data
+Simulation: 2
+Year: 2029
+Error: Error in MPfunction(Data = Data) : object 'outfile' not found
+

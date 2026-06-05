@@ -36,13 +36,18 @@ class(Eff) = "mp"
 #' @param HCR_up_max The maximum rate of advice increase. Positive imperfect fraction. E.g., 0.2 is a maximum management increase of +20 per cent.
 #' @param HCR_down_max The maximum rate of advice decrease. Positive fraction. E.g. 0.8 is a maximum management decreate of 80 per cent.
 #' @param HCR_smooth The effective number of parameters of a polynomial smoother applied to the input indices. Defaults to NA - raw data. A value of 0.1 means that there will be length(Index)*0.1 number of smoothing parameters. Hence, higher values are less smoothing. This parameterization keeps smoothing consistent as the length of the time series increases in projections.
-#' @param plot Should plots be produced that explain MP calculations (e.g. HCRs)? Boolean.
+#' @param plot Boolean. Should plots be produced that explain MP calculations (e.g. HCRs)?
+#' @param onlyHCR Boolean. Should only the HCR be plotted?
+#' @param debugfile Character string. Filename of where to print Data object each iteration. Ignored if NA.
 #' @examples
 #' GIR(Example_Data)
 #' @author T. Carruthers
 #' @export
-GIR = function(Data, HCR_ICP = c(0.5, 1.5), HCR_LCP = c(0.5, 1.5), HCR_sens = 1, HCR_up_max = 0.2, HCR_down_max = 0.2, HCR_smooth = 0.2, plot = F){
+GIR = function(Data, HCR_ICP = c(0.5, 1.5), HCR_LCP = c(0.5, 1.5), HCR_sens = 1,
+               HCR_up_max = 0.2, HCR_down_max = 0.2, HCR_smooth = 0.2,
+               plot = F, onlyHCR = F, debugfile = NA){
 
+  if(!is.na(debugfile))saveRDS(Data,debugfile)
   ad = Advice()
   # other things can go in here!
   ad = do_HCR(Data, HCR_ICP, HCR_LCP, HCR_sens, HCR_up_max, HCR_down_max,
@@ -53,8 +58,10 @@ GIR = function(Data, HCR_ICP = c(0.5, 1.5), HCR_LCP = c(0.5, 1.5), HCR_sens = 1,
 }
 class(GIR) = "mp"
 
+# Data = readRDS("C:/temp/degbug_Data.rds")
 # myMSE = Project(hist, MPs = "fakeMP")
-#  load("C:/GitHub/slMSE/data/Example_Data.rda"); Data = Example_Data; HCR_ICP = c(0.5, 1.5); HCR_LCP = c(0.5,1.5); HCR_sens = 1; HCR_smooth = 0.2
+#  load("C:/GitHub/slMSE/data/Example_Data.rda"); Data = Example_Data;
+#  HCR_ICP = c(0.5, 1.5); HCR_LCP = c(0.5,1.5); HCR_sens = 1; HCR_smooth = 0.2
 #  HCR_up_max = 0.2; HCR_down_max = 0.2; plot=T; onlyHCR = F
 
 do_HCR = function(Data, HCR_ICP, HCR_LCP, HCR_sens, HCR_up_max, HCR_down_max, HCR_smooth, plot, onlyHCR, ad){
@@ -85,7 +92,7 @@ do_HCR = function(Data, HCR_ICP, HCR_LCP, HCR_sens, HCR_up_max, HCR_down_max, HC
     new_rel_lev_vals = old_rel_lev_vals
   }
 
-  ad@TAC = Data@Landings@Value[refhistts(Data, Season),] * new_rel_lev_vals
+  ad@TAC = Data@Landings@Value[refhistts(Data, season),] * new_rel_lev_vals
   ad@Misc$rel_lev_vals = new_rel_lev_vals
   ad
 
