@@ -8,7 +8,7 @@ RCM_data = function(sim, simdata, Name = "An RCM OM w data", c_oe = 0.05, i_oe =
                     ESS = 50, C_eq_fac = 1, C_eq_nyrs = 5, nsubyr = 4,
                     R0init, M, Len_age = NA, Wt_age = NA, Mat_age = NA, Sel_age = NA,
                     Steepness, SRrel = 2, pe = 0.6,  # SRrel = 1 is B-H, SRrel = 2 is Ricker
-                    proyears = 15, CurrentYear = 2026, nSim = 1){
+                    proyears = 15, CurrentYear = 2026, nSim = 2){
 
 
   nsim = 2
