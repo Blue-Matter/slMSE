@@ -85,7 +85,13 @@ library(dplyr)
 library(kableExtra)
 library(readxl)
 
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(
+  dpi = 300,            # High resolution for printing/displays
+  fig.width = 10,        # Width of the plot in inches
+  fig.height = 7,        # Height of the plot in inches
+  echo = FALSE
+)
+#knitr::opts_chunk$set(echo = FALSE)
 
 maketab <- function(dir,Alab="Statistical Area"){
   filenam = list.files(dir)
@@ -373,7 +379,7 @@ class?om
 
 To undertake a historical simulation you use the Simulate function: 
 
-```{r Simulate, eval = T, echo=T, message=FALSE}
+```{r Simulate, eval = T, echo=T, message=FALSE, dpi=192}
 hist = Simulate(om)   # Historical simulation
 slplot(hist)          # Summary plot of dynamics
 ```
