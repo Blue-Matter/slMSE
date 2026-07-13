@@ -1,0 +1,18 @@
+MP: GIR
+2027
+
+MP `GIR` Error
+Data: An RCM OM w data
+Simulation: 1
+Year: 2027
+Error: Error in MPfunction(Data = Data) : object 'onlyHCR' not found
+
+MP: GIR
+2027
+
+MP `GIR` Error
+Data: An RCM OM w data
+Simulation: 2
+Year: 2027
+Error: Error in MPfunction(Data = Data) : object 'onlyHCR' not found
+

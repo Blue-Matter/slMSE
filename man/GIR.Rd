@@ -4,14 +4,26 @@
 \alias{GIR}
 \title{A Generic Index Ratio Management Procedure (OpenMSE v2.0)}
 \usage{
-GIR(Data)
+GIR(
+  Data,
+  HCR_ICP = c(0.5, 1.5),
+  HCR_LCP = c(0.5, 1.5),
+  HCR_sens = 1,
+  HCR_up_max = 0.2,
+  HCR_down_max = 0.2,
+  HCR_smooth = 0.2,
+  plot = F,
+  onlyHCR = F,
+  debugfile = NA,
+  debugyr = 2028
+)
 }
 \arguments{
 \item{Data}{An object of openMSE class 'Data'}
 
-\item{HCR_ICP}{2-position vector. The Index control points. These are a pair of x-axis control points for a hockey-stick control rule. Phrased in terms of the levels of the generic survey index for the last historical year.}
+\item{HCR_ICP}{2-position vector. The Index control points - index relative to last historical year. These are a pair of x-axis control points for a hockey-stick control rule. Phrased in terms of the levels of the generic survey index for the last historical year.}
 
-\item{HCR_LCP}{2-position vector. Management Lever control points. These are a pair of y-axis control points for a hockey-stick control rule. Phrased in terms of the levels of catch over the last historical year.}
+\item{HCR_LCP}{2-position vector. Management Lever control points - TAC relative to Landings in last historical year. These are a pair of y-axis control points for a hockey-stick control rule. Phrased in terms of the levels of catch over the last historical year.}
 
 \item{HCR_sens}{Sensitivity of the response. A value of 1 is proportional.}
 
@@ -21,7 +33,13 @@ GIR(Data)
 
 \item{HCR_smooth}{The effective number of parameters of a polynomial smoother applied to the input indices. Defaults to NA - raw data. A value of 0.1 means that there will be length(Index)*0.1 number of smoothing parameters. Hence, higher values are less smoothing. This parameterization keeps smoothing consistent as the length of the time series increases in projections.}
 
-\item{plot}{Should plots be produced that explain MP calculations (e.g. HCRs)? Boolean.}
+\item{plot}{Boolean. Should plots be produced that explain MP calculations (e.g. HCRs)?}
+
+\item{onlyHCR}{Boolean. Should only the HCR be plotted?}
+
+\item{debugfile}{Character string. Filename of where to print Data object each iteration. Ignored if NA.}
+
+\item{debugyr}{Year (or fraction of year) for reporting the debugfile.}
 }
 \description{
 A function for calculating TAC management advice
