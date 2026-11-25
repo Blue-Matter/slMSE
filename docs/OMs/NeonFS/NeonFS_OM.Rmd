@@ -1,0 +1,650 @@
+---
+title: 'North Pacific Neon Flying Squid Operating Model Specification'
+author: "Tom Carruthers (<tom@bluematterscience.com>)"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_document:
+    number_sections: yes
+    toc: true
+    toc_float: true
+subtitle: An operating model conditioned with the Rapid Conditioning Model (RCM) for testing management procedures for a short-lived species.
+---
+
+<style type="text/css">
+
+pre code {
+  word-wrap: normal;
+  white-space: pre;
+}
+body{ /* Normal  */
+   font-size: 12px;
+}
+td {  /* Table  */
+   font-size: 9px;
+}
+h1 { /* Header 1 */
+ font-size: 18px;
+ color: DarkBlue;
+}
+h2 { /* Header 2 */
+ font-size: 15px;
+ color: DarkBlue;
+}
+h3 { /* Header 3 */
+ font-size: 14px;
+ color: DarkBlue;
+}
+code.r{ /* Code block */
+  font-size: 10px;
+}
+pre { /* Code block */
+  font-size: 10px;
+  overflow-x: auto;
+}
+</style>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<img src="Img/BM.jpg" width="140">
+<img src="Img/openMSE.JPG" width="150">
+
+```{r setup, include = FALSE}
+
+library(readxl)
+library(kableExtra)
+
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", dpi = 85, fig.width = 5.5, fig.height = 4.1, message = F, warning = F)
+
+options(width = 650)
+
+par(mai=c(0.9,0.9,0.2,0.05))
+
+plotatab2 <- function(filey,sheet,head=T){
+  if(head){
+    dat = read_xlsx(filey,sheet)
+    kable(dat,"simple")
+  }else{
+    dat = read_xlsx(filey,sheet,col_names=F)
+    kable(dat,"simple",col.names=rep("",ncol(dat)))
+  }
+}
+
+```
+
+
+<br>
+<hr>
+
+
+# Foreword
+
+This operating model is for conducting exploratory, didactic analyses and is not intended to inform management decision making at this stage. All data used in the construction of these operating models are publicly available from sources that are cited.
+
+<br>
+<hr>
+
+
+# Introduction
+
+Neon flying squid (*Ommastrephes bartramii*) is an oceanic squid that is harvested on the high seas of the North Pacific by China, Japan, Korea, Russia, Chinese Taipei and Vanuatu, and is managed by the North Pacific Fisheries Commission (NPFC). The North Pacific population comprises two seasonal cohorts: an autumn cohort that hatches from September to February and a winter–spring cohort that hatches mainly from January to May. Both cohorts migrate annually between subtropical spawning grounds and northern feeding grounds. Neon flying squid mature and spawn at 7-10 months of age and have an estimated life span of one year ([NPFC-2026-SSC NFS04-WP02](Refs/NPFC-2026-SSC NFS04-WP02(Rev1) Species summary for neon flying squid.docx)).
+
+NPFC has not yet conducted a unified stock assessment and has not adopted reference points or a harvest control rule. Members have conducted preliminary surplus production assessments: a JABBA assessment using the Chinese squid-jigging CPUE ([NPFC-2026-SSC NFS04-WP07](Refs/NPFC-2026-SSC NFS04-WP07 Updated stock assessment JABBA_Chn.docx)), and a SPiCT assessment of the winter–spring cohort using Chinese and Japanese fishery CPUE and a Japanese driftnet survey ([NPFC-2026-SSC NFS04-WP10](Refs/NPFC-2026-SSC NFS04-WP10 SPiCT_Jpn.docx)). The five-year work plan of the Small Scientific Committee on neon flying squid includes exploring methods and tools for MSE ([NPFC-2026-SSC NFS04-WP01](Refs/NPFC-2026-SSC NFS04-WP01(Rev1) Five-year Work Plan of SSC NFS_0.docx)).
+
+Unlike the hake and anchovy operating models of the Climate Test, there is no age-structured assessment to mimic. Instead the operating model is conditioned directly on the available catch and abundance index data using the Rapid Conditioning Model ([RCM](https://samtool.openmse.com/reference/RCM.html)) of the SAMtool package. RCM is a statistical catch-at-age model that is fitted to the data given the life-history assumptions of an operating model, and returns an operating model whose historical dynamics are consistent with the data.
+
+The operating model represents the stock-wide population (both cohorts), consistent with the base case of the JABBA assessment, and is fitted to all of the available abundance indices. It is annual and covers 2005 to 2025, the period for which Chinese catch data are available (Chinese catches before 2005 are not reported to NPFC).
+
+<br>
+<hr>
+
+# Methods
+
+## Data
+
+### Catches
+
+Annual catches by member are taken from the NPFC Annual Summary Footprint for squids ([Data/NPFC-2026-AR-Annual Summary Footprint-Squids (Rev3)_0.xlsx](Data/NPFC-2026-AR-Annual Summary Footprint-Squids (Rev3)_0.xlsx)). Where a member's total is redacted ('x', fewer than three vessels), the sum of the reported areal components is used (e.g. Japan from 2018 is the sum of the catch east of 170°E and in national waters). Japanese catches include those in Japanese national waters. Catches of Japanese flying squid in the same workbook are excluded.
+
+```{r catch_data, echo=TRUE, eval=TRUE, fig.width=7.5}
+library(readxl)
+
+num = function(x){x = suppressWarnings(as.numeric(x)); x[is.na(x)] = 0; x}   # redacted ('x') and missing cells are zero
+raw = as.data.frame(suppressMessages(read_xlsx("Data/NPFC-2026-AR-Annual Summary Footprint-Squids (Rev3)_0.xlsx",
+                                               "Catch", col_names = FALSE, skip = 8)))
+raw = raw[!is.na(suppressWarnings(as.numeric(raw[,1]))), ]                    # year rows only
+
+catch_mem = data.frame(Year = as.numeric(raw[,1]),                            # neon flying squid columns of the workbook:
+  China   = pmax(num(raw[,2]),  num(raw[,3])  + num(raw[,4])),               # total or (CA west + CA east)
+  Japan   = num(raw[,9]) + num(raw[,10]) + num(raw[,11]),                    # CA west + CA east + national waters
+  Korea   = pmax(num(raw[,14]), num(raw[,15]) + num(raw[,16])),
+  Russia  = num(raw[,17]),
+  CTaipei = pmax(num(raw[,30]), num(raw[,31]) + num(raw[,32])),
+  Vanuatu = pmax(num(raw[,33]), num(raw[,34]) + num(raw[,35])))
+catch_mem = catch_mem[order(catch_mem$Year), ]
+catch_mem$Total = rowSums(catch_mem[, -1])
+
+Years = 2005:2025; ny = length(Years)                                         # OM historical years
+C = catch_mem$Total[match(Years, catch_mem$Year)]                             # stock-wide catch (t)
+
+par(mfrow=c(1,1), mai=c(0.7,0.9,0.1,0.05))
+mems = c("China","Japan","Korea","Russia","CTaipei","Vanuatu")
+mcols = c("red","blue","green","orange","purple","grey")
+barplot(t(as.matrix(catch_mem[, mems]))/1000, names.arg = catch_mem$Year, col = mcols, border = NA, las = 2, cex.names = 0.8, ylab = "Catch (kt)")
+legend('topright', legend = mems, fill = mcols, border = NA, bty = 'n', cex = 0.8)
+abline(v = (2005-1995)*1.2 + 0.1, lty = 2)
+```
+
+### Abundance indices
+
+Five abundance indices are available in the reference documents. These were transcribed into [Data/NFS_indices.xlsx](Data/NFS_indices.xlsx) (the 'Sources' sheet records the table each came from):
+
+* Chinese squid-jigging fishery CPUE for the winter–spring cohort, standardized by gradient boosting (2005-2025; [WP05](Refs/NPFC-2026-SSC NFS04-WP05 Standardized CPUE 2005-2025_Chn.docx) Table 4),
+* Japanese squid-jigging fishery CPUE for the autumn cohort (2005-2025; [WP03](Refs/NPFC-2026-SSC NFS04-WP03 Japanese fishery CPUE for autumn cohort.docx) Table 1),
+* Chinese Taipei squid-jigging fishery CPUE (2016-2025; [WP04](Refs/NPFC-2026-SSC NFS04-WP04 NFS_CpueStd2025_CT.docx) Table 4), and
+* the Japanese summer driftnet survey CPUE for the winter–spring and autumn cohorts (2001-2025; [WP09](Refs/NPFC-2026-SSC NFS04-WP09 JapaneseSurveyCPUE.docx) Table 1).
+
+The indices are weighted by the observation errors estimated by the SPiCT assessment, which estimated these from the data: 0.37 for the Chinese CPUE, 0.85 for the Japanese fishery CPUE and 0.63 for the Japanese survey. The Chinese Taipei CPUE uses its reported CVs, with a minimum of 0.37.
+
+The indices show conflicting trends. The Chinese CPUE declined by around 80% between 2007 and 2009 and has been low since, with a further sharp drop in 2025. The Japanese indices are noisier and show no clear long-term decline, and both increased in 2025. Note that in 2025 the Chinese fleet took almost all of its catch east of 170°E, so the 2025 Chinese winter–spring CPUE (fished west of 170°E) may reflect a change in fleet distribution as well as abundance.
+
+```{r index_data, echo=TRUE, eval=TRUE, fig.width=7.5, fig.height = 5}
+idx = function(sh) as.data.frame(read_xlsx("Data/NFS_indices.xlsx", sh))
+chn = idx("China_jig_WS"); jpn = idx("Japan_jig_Autumn"); ct = idx("CTaipei_jig_WS"); sv = idx("Japan_driftnet_survey")
+
+Index = cbind(China_jig_WS = chn$GBM[match(Years, chn$Year)],
+              Japan_jig_Aut = jpn$Std[match(Years, jpn$Year)],
+              CTaipei_jig_WS = ct$Std[match(Years, ct$Year)],
+              Japan_survey_WS = sv$WS_std[match(Years, sv$Year)],
+              Japan_survey_Aut = sv$Autumn_std[match(Years, sv$Year)])
+ni = ncol(Index); inames = colnames(Index)
+
+I_sd = cbind(rep(0.37, ny),                                     # SPiCT estimated obs. error, Chinese CPUE
+             rep(0.85, ny),                                     # SPiCT estimated obs. error, Japanese fishery CPUE
+             pmax(0.37, ct$CV[match(Years, ct$Year)]),          # reported CV (min 0.37)
+             rep(0.63, ny), rep(0.63, ny))                      # SPiCT estimated obs. error, Japanese survey
+I_sd[is.na(Index)] = NA
+
+par(mfrow=c(1,1), mai=c(0.5,0.9,0.1,0.05))
+icols = c("red","blue","purple","darkgreen","cyan3")
+matplot(Years, sweep(Index, 2, colMeans(Index, na.rm=T), "/"), type = 'b', pch = 19, lty = 1, col = icols,
+        ylab = "Index (relative to mean)", xlab = ""); grid()
+legend('topright', legend = inames, text.col = icols, bty = 'n', cex = 0.8)
+```
+
+## Representing a one-year life cycle in an annual model
+
+Neon flying squid live for one year: animals that hatch in winter and spring recruit to the fishery in summer, are fished during summer and autumn (July to November) as they migrate north, then return south to spawn and die. An annual age-structured model can represent this with three age classes:
+
+* **Age 0**: pre-recruits, from hatching to recruitment to the fishery. These are not fished.
+* **Age 1**: the fished cohort. These are fully selected by the fishery, and spawn three-quarters of the way through the year (after the fishing season, `spawn_time_frac = 0.75`) and are fully mature.
+* **Age 2**: a placeholder age class with a very high natural mortality rate (10 per year), to represent death after spawning. It is not fished and is not mature.
+
+In RCM, spawning output in year *y* is calculated from ages 1+ in year *y* (accounting for mortality up to the time of spawning), and generates age-0 recruitment in the same year *y*. These recruits become the fished cohort in year *y*+1. The generation time is therefore one year, as it should be. Note that the fished cohort must be age 1 rather than age 0 because, in operating model projections, age-0 recruits are added after the fishery has operated in that year.
+
+Natural mortality rate is a key unknown. The operating model samples M for ages 0 and 1 from a uniform distribution between 0.6 and 1.2 per year among simulations (i.e. 0.05 to 0.1 per month), and RCM conditions each simulation separately.
+
+Since only age 1 is fished and length data are not used, the length-weight relationship only sets the units of biomass. Weight at age 1 is calculated from the mantle length–weight relationship of the Chinese squid-jigging survey ([WP06](Refs/NPFC-2026-SSC NFS04-WP06 Size composition NFS Chinese squid jigging survey.docx) Fig. 4; W = 2.60e-5 ML^3.021, mm - g) for a representative mantle length in the fishing season of 270 mm (approximately 0.6 kg).
+
+```{r biology, echo=TRUE, eval=TRUE}
+wl = function(ML) 2.60e-5 * ML ^ 3.021 / 1000       # mantle length (mm) to weight (kg)
+
+maxage = 2; nage = maxage + 1                        # ages 0, 1, 2
+Len_age = c(100, 270, 300)                           # mantle length (mm) of pre-recruits, fished cohort and placeholder
+Wt_age  = wl(Len_age)                                # weight (kg)
+Mat_age = c(0, 1, 0)                                 # only the fished cohort spawns
+Sel_age = c(0, 1, 0)                                 # only the fished cohort is selected
+spawn_time_frac = 0.75                               # spawning after the summer-autumn fishing season
+
+nsim = 24
+set.seed(1)
+Msim = runif(nsim, 0.6, 1.2)                         # natural mortality rate (per year) of ages 0 and 1
+
+data.frame(Age = 0:maxage, Length_mm = Len_age, Weight_kg = round(Wt_age, 3), Mature = Mat_age, Selected = Sel_age)
+```
+
+## Operating model template
+
+As for other RCM-conditioned operating models (e.g. Arctic char), a template operating model of class `OM` is specified with the life-history assumptions and observation and implementation error settings. Life-history parameters that are not used because they are specified directly at age by custom parameters (`cpars`) are given placeholder values. Unfished recruitment and the historical recruitment deviations and fishing mortality rates will be estimated by RCM.
+
+The stock-recruitment relationship is Beverton-Holt with an assumed steepness of 0.8. The penalty on recruitment deviations (the assumed lognormal standard deviation of recruitment) is 0.6.
+
+```{r om_template, echo=TRUE, eval=TRUE}
+library(openMSE)
+
+NFS_template = function(nsim = 24, nyears, proyears = 30, CurrentYr){
+  OM = new('OM')
+  OM@Name = "North Pacific neon flying squid (stock-wide)"
+  OM@Agency = "Blue Matter Science"
+  OM@Region = "North Pacific Ocean (NPFC Convention Area)"
+  OM@Sponsor = ""
+  OM@Source = "https://github.com/Blue-Matter/Short-Lived-IO"
+  OM@Common_Name = "Neon flying squid"
+  OM@Species = "Ommastrephes bartramii"
+  OM@Latitude = 40; OM@Longitude = 165
+  OM@nsim = nsim; OM@nyears = nyears; OM@proyears = proyears; OM@CurrentYr = CurrentYr
+  OM@interval = 1; OM@pstar = 0.5; OM@maxF = 3; OM@reps = 1; OM@seed = 1
+
+  # Life history
+  OM@maxage = maxage
+  OM@R0 = 1E9                     # initial guess, estimated by RCM
+  OM@M = c(0.6, 1.2)              # placeholder, specified in cpars
+  OM@Msd = OM@Linfsd = OM@Ksd = c(0, 0)
+  OM@h = c(0.8, 0.8)              # assumed steepness (Beverton-Holt)
+  OM@SRrel = 1                    # Beverton-Holt
+  OM@Perr = c(0.6, 0.6)           # recruitment deviation penalty / projected recruitment variability
+  OM@AC = c(0, 0)                 # updated by RCM
+  OM@Linf = c(450, 450); OM@K = c(1, 1); OM@t0 = c(0, 0); OM@LenCV = c(0.1, 0.1)  # placeholders (cpars)
+  OM@L50 = c(250, 250); OM@L50_95 = c(20, 20)                                     # placeholders (cpars)
+  OM@D = c(0.5, 0.5)              # updated by RCM
+  OM@a = 1; OM@b = 3              # placeholders (cpars)
+  OM@Size_area_1 = OM@Frac_area_1 = OM@Prob_staying = c(0.5, 0.5)  # fully mixed
+
+  # Fleet (placeholders, selectivity is specified at age in RCM)
+  OM@L5 = c(150, 150); OM@LFS = c(250, 250); OM@Vmaxlen = c(1, 1); OM@isRel = FALSE
+  OM@Fdisc = c(0, 0); OM@DR = 0
+  OM@EffYears = c(1, nyears); OM@EffLower = OM@EffUpper = c(1, 1); OM@Esd = c(0, 0)
+  OM@qinc = c(0, 0); OM@qcv = c(0, 0); OM@Spat_targ = c(1, 1)
+
+  # Observation
+  OM@Cobs = c(0.05, 0.05)         # catch observation error
+  OM@Cbiascv = 0.001              # unbiased
+  OM@CAA_nsamp = c(100, 100); OM@CAA_ESS = c(50, 50)
+  OM@CAL_nsamp = c(100, 100); OM@CAL_ESS = c(50, 50)
+  OM@Iobs = c(0.3, 0.3)           # abundance indices observed with a CV of 30%
+  OM@Btobs = c(0.3, 0.3); OM@Dobs = c(0.2, 0.2); OM@Eobs = c(0.1, 0.1)
+  OM@Btbiascv = OM@LenMbiascv = OM@Mbiascv = OM@Kbiascv = OM@t0biascv = OM@Linfbiascv =
+    OM@LFCbiascv = OM@LFSbiascv = OM@FMSY_Mbiascv = OM@BMSY_B0biascv = OM@Irefbiascv =
+    OM@Brefbiascv = OM@Crefbiascv = OM@Dbiascv = OM@hbiascv = OM@Recbiascv =
+    OM@sigmaRbiascv = OM@Ebiascv = 0.001                          # no bias in simulated data
+  OM@beta = c(1, 1)               # indices linearly related to abundance
+
+  # Implementation
+  OM@TACFrac = OM@TAEFrac = OM@SizeLimFrac = c(1, 1)
+  OM@TACSD = OM@TAESD = OM@SizeLimSD = c(0, 0)
+
+  # Custom parameters: biology at age
+  ally = nyears + proyears
+  OM@cpars = list(Len_age = array(rep(Len_age, each = nsim), c(nsim, nage, ally)),
+                  Wt_age  = array(rep(Wt_age,  each = nsim), c(nsim, nage, ally)),
+                  Mat_age = array(rep(Mat_age, each = nsim), c(nsim, nage, ally)),
+                  M_ageArray = array(rep(c(1, 1, 0), each = nsim) * Msim + rep(c(0, 0, 10), each = nsim), c(nsim, nage, ally)),
+                  spawn_time_frac = rep(spawn_time_frac, nsim))
+  OM
+}
+
+OM = NFS_template(nsim, nyears = ny, CurrentYr = max(Years))
+round(OM@cpars$M_ageArray[1:4, , 1], 3)    # M at age for the first four simulations
+```
+
+## RCM data
+
+The catch and index data are formatted as an `RCMdata` object. Catches (in kg, to match the units of weight) are assumed to be observed with a lognormal standard deviation of 0.05. All indices are assumed to be proportional to the biomass of the fished cohort (selectivity mirrors the fleet).
+
+The fishery was operating before 2005 (Chinese catches before 2005 are not reported to NPFC), so the stock was not unfished in 2005. Rather than assuming an equilibrium catch before 2005, RCM estimates the abundance of the age classes in 2005 (early recruitment deviations).
+
+```{r rcm_data, echo=TRUE, eval=TRUE}
+make_RCMdata = function(C, Index, I_sd){
+  dat = new('RCMdata')
+  dat@Chist = matrix(C * 1000, ncol = 1)      # catch (kg), single stock-wide fleet
+  dat@C_sd = matrix(0.05, nrow(dat@Chist), 1)
+  dat@Index = Index
+  dat@I_sd = I_sd
+  dat
+}
+RCMdat = make_RCMdata(C, Index, I_sd)
+```
+
+## RCM fit: reference operating model
+
+The reference operating model fits all five indices. Selectivity is fixed at age (`selectivity = "free"`, with all selectivity parameters fixed by the `map` argument).
+
+```{r rcm_fit, echo=TRUE, eval=TRUE, message = FALSE}
+fit_RCM = function(OM, RCMdat, LWT_Index){
+  RCM(OM, RCMdat,
+      condition = "catch",                                   # F estimated to fit catches
+      selectivity = "free",                                  # selectivity specified at age ...
+      start = list(vul_par = matrix(Sel_age, nage, 1)),
+      map = list(vul_par = matrix(NA, nage, 1)),             # ... and fixed
+      s_selectivity = rep(1, ncol(RCMdat@Index)),            # indices proportional to vulnerable biomass
+      LWT = list(Index = LWT_Index),                         # likelihood weights for the indices
+      max_F = 3, mean_fit = TRUE, cores = 1,
+      drop_nonconv = TRUE, drop_highF = FALSE, silent = TRUE)
+}
+
+fit1 = fit_RCM(OM, RCMdat, LWT_Index = rep(1, ni))
+OM1 = fit1@OM
+c(Converged = sum(fit1@conv), Simulations = OM1@nsim)
+```
+
+The fits to the indices are shown below for each simulation (grey) and the fit with mean M (red). The model cannot fit all of the indices well given their conflicting trends. In particular it does not reproduce the high Chinese CPUE in 2005-2007 or the very low Chinese CPUE in 2025, and does not track the large interannual variability in the Japanese indices.
+
+```{r rcm_index_fits, echo=TRUE, eval=TRUE, fig.width=7.5, fig.height = 5.5}
+plot_index_fits = function(fit){
+  par(mfrow=c(2,3), mai=c(0.3,0.5,0.3,0.05), omi = c(0.2,0.1,0,0))
+  for(i in 1:ncol(Index)){
+    ok = !is.na(Index[,i])
+    preds = sapply(fit@report, function(x) x$Ipred[1:ny, i])
+    ylim = c(0, max(c(Index[,i], preds, fit@mean_fit$report$Ipred[1:ny, i]), na.rm = T) * 1.05)
+    matplot(Years, preds, type = 'l', lty = 1, col = '#99999960', ylim = ylim, ylab = "Index", main = inames[i])
+    lines(Years, fit@mean_fit$report$Ipred[1:ny, i], col = 'red', lwd = 2)
+    LB = qlnorm(0.05, log(Index[,i]), I_sd[,i]); UB = qlnorm(0.95, log(Index[,i]), I_sd[,i])
+    segments(Years[ok], LB[ok], Years[ok], UB[ok]); points(Years, Index[,i], pch = 19); grid()
+  }
+  plot.new(); legend('center', legend = c("Observed (90% interval)", "RCM, each simulation", "RCM, mean M"),
+                     pch = c(19, NA, NA), lty = c(1, 1, 1), lwd = c(1, 1, 2), col = c("black", "grey", "red"), bty = 'n')
+}
+plot_index_fits(fit1)
+```
+
+The estimated dynamics are shown below. Biomass is the biomass at the start of the year (mostly the fished cohort), spawning biomass is expressed relative to unfished, and F is the apical fishing mortality rate of the fished cohort.
+
+The model explains the steep decline in the Chinese CPUE after 2007, while catches remained high, with a period of exceptionally high recruitment in 2005-2007 followed by a reduction in recruitment and high exploitation rates. In several simulations F reaches the upper bound (3) in the high-catch years 2005-2011, implying that most of the fished cohort was removed. Since 2015 F has been lower and spawning biomass recovered to 30-40% of unfished, before falling again in 2024 and 2025.
+
+```{r rcm_dynamics, echo=TRUE, eval=TRUE, fig.width=7.5, fig.height = 5.5}
+plot_dynamics = function(fit, main = ""){
+  reps = fit@report
+  getv = function(nam, nyrs = ny) sapply(reps, function(x) x[[nam]][1:nyrs])
+  B   = getv("B") / 1E6                                                  # kt
+  D   = sapply(reps, function(x) x$E[1:ny] / x$E0[1])                    # SSB / SSB0
+  R   = getv("R") / 1E9                                                  # billions
+  Fy  = sapply(reps, function(x) x$F[1:ny, 1])
+  qplot = function(mat, ylab, ylim = c(0, max(mat, na.rm=T))){
+    qs = apply(mat, 1, quantile, p = c(0.05, 0.5, 0.95), na.rm = T)
+    plot(Years, qs[2,], type = 'n', ylim = ylim, ylab = ylab, xlab = "")
+    polygon(c(Years, rev(Years)), c(qs[1,], rev(qs[3,])), col = "#0000ff30", border = NA)
+    lines(Years, qs[2,], lwd = 2, col = 'blue'); grid()
+  }
+  par(mfrow=c(2,2), mai=c(0.3,0.6,0.1,0.05), omi = c(0.1,0.1,0.25,0))
+  qplot(B, "Biomass (kt)"); qplot(D, "SSB / SSB0", c(0, max(1, max(D)))); abline(h = c(0.2, 0.4), lty = 2, col = 'grey')
+  qplot(R, "Recruitment (billions)"); qplot(Fy, "Apical F")
+  mtext(main, 3, outer = TRUE, font = 2, col = 'blue')
+}
+plot_dynamics(fit1, "Reference OM: all indices")
+```
+
+There is a clear relationship between the assumed natural mortality rate and the estimated scale and depletion of the stock:
+
+```{r rcm_M, echo=TRUE, eval=TRUE, fig.width=7.5, fig.height = 3}
+plot_M = function(fit){
+  Ms = fit@OM@cpars$M_ageArray[, 2, 1]
+  B0 = sapply(fit@report, function(x) x$B0[1]) / 1E6
+  D  = sapply(fit@report, function(x) x$E[ny] / x$E0[1])
+  maxF = sapply(fit@report, function(x) max(x$F))
+  par(mfrow=c(1,3), mai=c(0.6,0.6,0.1,0.05))
+  plot(Ms, B0, pch = 19, xlab = "M", ylab = "Unfished biomass (kt)"); grid()
+  plot(Ms, D, pch = 19, xlab = "M", ylab = "SSB / SSB0 (2025)"); grid()
+  plot(Ms, maxF, pch = 19, xlab = "M", ylab = "Maximum apical F"); grid()
+}
+plot_M(fit1)
+```
+
+## RCM sensitivity: Chinese CPUE only
+
+The JABBA base case was fitted to the Chinese CPUE alone. To investigate this source of uncertainty, RCM was also conditioned on the Chinese CPUE only (the other indices have a likelihood weight of zero and are shown for comparison).
+
+With this weighting the model fits the Chinese CPUE more closely, but the fishing mortality rate is at the upper bound (3) in most years from 2008, and spawning biomass is around 1% of unfished in 2025. This is not a credible representation of the fishery (a near-total removal of the fished cohort each year for more than a decade), so it is not used as an operating model here. It shows that the Chinese CPUE, interpreted as proportional to stock-wide abundance, is difficult to reconcile with the catches under the assumed life history.
+
+```{r rcm_fit_china, echo=TRUE, eval=TRUE, message = FALSE, fig.width=7.5, fig.height = 5.5}
+fit2 = fit_RCM(OM, RCMdat, LWT_Index = c(1, 0, 0, 0, 0))
+c(Converged = sum(fit2@conv), Simulations = fit2@OM@nsim)
+plot_index_fits(fit2)
+plot_dynamics(fit2, "Sensitivity: Chinese CPUE only")
+```
+
+## Sensitivity: half-year time step
+
+The annual model lumps the timing of recruitment, fishing, natural mortality and spawning within a year. To test how sensitive the outputs are to this, RCM is also fitted with a half-year time step. The model is set up exactly as the annual model, except that each 'year' of the RCM is a six-month block (January-June and July-December), and recruitment is estimated in every block:
+
+* **Catches** are split into half-years. Since the fisheries operate mainly from July to November (Japanese jigging from May to September), 10% of the annual catch is assigned to January-June and 90% to July-December. Splits of 5% and 25% are tested. With no catch in January-June the off-phase recruitment line (below) is not identified and a third of the simulations converged to an implausible unfished solution, so a split of zero is not shown.
+* **Indices** are assigned to the July-December block, when the fisheries and the Japanese summer survey operate.
+* **Ages** are in half-years: hatchlings (age 0, not fished), juveniles on the feeding grounds (age 1, fished), spawners (age 2, mature, spawning half-way through the block) and a placeholder age that dies after spawning (age 3, M = 10). The natural mortality rate per block is half the annual rate of each simulation.
+* A squid hatched in January-June is fished in July-December and spawns in the following January-June, so the generation time is still one year. Recruitment in July-December (squid that hatch in autumn) forms a second, off-phase line that is analogous to the autumn cohort. The relative strength of the two lines is estimated.
+
+Only the juveniles (age 1) are vulnerable to the fishery, as in the annual model. When spawners were also assumed to be vulnerable, the likelihood was bimodal and the best-fitting solution was an implausible, essentially unfished population with very large recruitment, so this alternative was not pursued. 
+
+```{r half_year_fit, echo=TRUE, eval=TRUE, message = FALSE}
+fit_half = function(f1 = 0.1, LWT_Index = rep(1, ni)){
+  ns = 2; nt = ny * ns                                          # number of half-year time steps
+  Ch = as.vector(rbind(C * f1, C * (1 - f1)))                   # catch by half-year (Jan-Jun, Jul-Dec)
+  Ih = Ish = matrix(NA, nt, ni)
+  Ih[seq(2, nt, 2), ] = Index; Ish[seq(2, nt, 2), ] = I_sd      # indices in the Jul-Dec block
+  nage_h = 4                                                    # ages 0-3 half-years
+  Len_h = c(50, 250, 330, 330); Wt_h = wl(Len_h)                # mantle length (mm) and weight (kg)
+  Mat_h = c(0, 0, 1, 0)                                         # spawners are age 2
+  Sel_h = c(0, 1, 0, 0)                                         # juveniles are fished
+  OMh = NFS_template(nsim, nyears = nt, proyears = 60, CurrentYr = max(Years))
+  OMh@maxage = nage_h - 1
+  OMh@R0 = rep(median(sapply(fit1@report, function(x) x$R0[1])) / 2, 2)  # starting value: two recruitment events per year
+  ally = nt + 60
+  OMh@cpars = list(Len_age = array(rep(Len_h, each = nsim), c(nsim, nage_h, ally)),
+                   Wt_age  = array(rep(Wt_h,  each = nsim), c(nsim, nage_h, ally)),
+                   Mat_age = array(rep(Mat_h, each = nsim), c(nsim, nage_h, ally)),
+                   M_ageArray = array(rep(c(1, 1, 1, 0), each = nsim) * Msim / 2 +       # half the annual M per block
+                                      rep(c(0, 0, 0, 10), each = nsim), c(nsim, nage_h, ally)),
+                   spawn_time_frac = rep(0.5, nsim))
+  RCM(OMh, make_RCMdata(Ch, Ih, Ish), condition = "catch", selectivity = "free",
+      start = list(vul_par = matrix(Sel_h, nage_h, 1)), map = list(vul_par = matrix(NA, nage_h, 1)),
+      s_selectivity = rep(1, ni), LWT = list(Index = LWT_Index), max_F = 3, mean_fit = TRUE, cores = 1,
+      drop_nonconv = TRUE, drop_highF = FALSE, silent = TRUE)
+}
+
+fit_h  = fit_half(0.10)
+fit_h05 = fit_half(0.05)
+fit_h25 = fit_half(0.25)
+sapply(list(f1_0.10 = fit_h, f1_0.05 = fit_h05, f1_0.25 = fit_h25), function(x) c(Converged = sum(x@conv), Simulations = nsim))
+```
+
+About 10 of the 24 simulations do not converge. The same simulations fail for each catch split, and failure is not related to the assumed natural mortality rate. The January-June catch can only be taken from juveniles of the weak off-phase line, and fishing mortality in that block reaches the upper bound (max_F = 3) in some years, which is the likely cause. The converged simulations are retained. 
+
+The outputs are converted to an annual basis for comparison with the annual model: spawning biomass relative to unfished is averaged over the two blocks, fishing mortality is reported for the July-December block (the main fishing season; January-June fishing mortality applies only to the weak off-phase line), and biomass is that at the start of the July-December block (the start of the fishing season). 
+
+```{r half_year_compare, echo=TRUE, eval=TRUE, fig.width = 7.5, fig.height = 5.5}
+annual_metrics = function(fit){
+  list(D = sapply(fit@report, function(x) x$E[1:ny] / x$E0[1]),
+       F = sapply(fit@report, function(x) x$F[1:ny, 1]),
+       B = sapply(fit@report, function(x) x$B[1:ny]) / 1E6)
+}
+half_metrics = function(fit){
+  s1 = seq(1, 2 * ny, 2); s2 = s1 + 1
+  list(D = sapply(fit@report, function(x) (x$E[s1] + x$E[s2]) / (2 * x$E0[1])),
+       F = sapply(fit@report, function(x) x$F[s2, 1]),                # Jul-Dec F
+       F1 = sapply(fit@report, function(x) x$F[s1, 1]),               # Jan-Jun F
+       B = sapply(fit@report, function(x) x$B[s2]) / 1E6,
+       R1 = sapply(fit@report, function(x) x$R[s1]) / 1E9,        # Jan-Jun recruitment
+       R2 = sapply(fit@report, function(x) x$R[s2]) / 1E9)        # Jul-Dec recruitment
+}
+am = annual_metrics(fit1); hm = half_metrics(fit_h); hm05 = half_metrics(fit_h05); hm25 = half_metrics(fit_h25)
+
+band = function(mat, col){
+  qs = apply(mat, 1, quantile, p = c(0.05, 0.5, 0.95), na.rm = T)
+  polygon(c(Years, rev(Years)), c(qs[1,], rev(qs[3,])), col = adjustcolor(col, 0.2), border = NA)
+  lines(Years, qs[2,], col = col, lwd = 2)
+}
+medl = function(mat, col) lines(Years, apply(mat, 1, median), col = col, lty = 2)
+panel = function(nam, ylab){
+  ylim = c(0, max(sapply(list(am, hm, hm05, hm25), function(x) quantile(x[[nam]], 0.95, na.rm = T))))
+  plot(Years, Years, type = 'n', ylim = ylim, ylab = ylab, xlab = "")
+  band(am[[nam]], "blue"); band(hm[[nam]], "red"); medl(hm05[[nam]], "darkred"); medl(hm25[[nam]], "orange"); grid()
+}
+par(mfrow=c(2,2), mai=c(0.3,0.6,0.1,0.05), omi = c(0.1,0.1,0,0))
+panel("D", "SSB / SSB0"); abline(h = c(0.2, 0.4), lty = 3, col = 'grey')
+legend('topright', legend = c("Annual", "Half-year (10% Jan-Jun)", "Half-year (5%)", "Half-year (25%)"),
+       col = c("blue", "red", "darkred", "orange"), lty = c(1, 1, 2, 2), lwd = c(2, 2, 1, 1), bty = 'n', cex = 0.75)
+panel("F", "Apical F (half-year: Jul-Dec)")
+panel("B", "Biomass at start of fishing season (kt)")
+R1 = apply(hm$R1, 1, median); R2 = apply(hm$R2, 1, median)
+barplot(rbind(R1, R2), names.arg = Years, col = c("darkgreen", "cyan3"), border = NA, las = 2, cex.names = 0.7,
+        ylab = "Recruitment (billions)")
+legend('topright', legend = c("Jan-Jun (winter-spring)", "Jul-Dec (autumn)"), fill = c("darkgreen", "cyan3"), border = NA, bty = 'n', cex = 0.75)
+```
+
+```{r half_year_table, echo=TRUE, eval=TRUE}
+tab = function(m, lab, conv){
+  q = function(x) paste0(round(median(x), 2), " (", round(quantile(x, 0.05), 2), "-", round(quantile(x, 0.95), 2), ")")
+  data.frame(Model = lab, Converged = conv, SSB2025_SSB0 = q(m$D[ny, ]), F2025 = q(m$F[ny, ]), 
+             Max_median_F = round(max(apply(m$F, 1, median)), 2),
+             Years_JanJun_F_at_bound = if(is.null(m$F1)) NA else sum(apply(m$F1, 1, median) > 2.99))
+}
+rbind(tab(am, "Annual", sum(fit1@conv)), tab(hm, "Half-year, 10% Jan-Jun", sum(fit_h@conv)),
+      tab(hm05, "Half-year, 5% Jan-Jun", sum(fit_h05@conv)), tab(hm25, "Half-year, 25% Jan-Jun", sum(fit_h25@conv)))
+```
+
+With a half-year time step most recruitment is attributed to the January-June block (the winter-spring cohort). The size of the off-phase (autumn) line is largely set by the assumed January-June catch, which must be taken from it, often at the upper bound on fishing mortality; the relative strength of the two lines is therefore an assumption rather than an estimate. 
+
+The broad pattern of depletion is similar to the annual model: the stock is heavily depleted around 2010-2013 and again in 2025. The half-year model estimates less severe depletion in 2005-2014 and 2025 (median SSB/SSB0 in 2025 of about 0.13-0.17 versus 0.07) and a more muted rise in 2015-2019. Within the range tested, the catch split has a smaller effect than the change of time step. Because the annual data cannot inform within-year timing, these differences should be treated as structural uncertainty in the annual operating model; a seasonal model would only become informative with catch (and ideally indices) by month or season. 
+
+## Comparison with the surplus production assessments
+
+The surplus production assessments estimated an exploitable biomass at MSY of approximately 260 kt (JABBA stock-wide base case; i.e. carrying capacity of around 510 kt) and a carrying capacity of 560-735 kt for the winter–spring cohort (SPiCT). The JABBA base case estimated that 2025 biomass was 28% of B<sub>MSY</sub> (around 14% of carrying capacity).
+
+The reference operating model agrees that the stock is depleted in 2025, but its unfished biomass (around 100 kt at the start of the year) is much smaller than the carrying capacity of the production models, which treat the high biomass of 2005-2007 as close to unfished. In the operating model, the 2005-2007 biomass of around 300 kt is the result of exceptionally high recruitment (more than twice unfished recruitment). Which of these interpretations is more plausible is an important axis of uncertainty for MSE.
+
+```{r comparison, echo=TRUE, eval=TRUE}
+summ = function(fit, lab){
+  B0 = sapply(fit@report, function(x) x$B0[1]) / 1E6
+  D25 = sapply(fit@report, function(x) x$E[ny] / x$E0[1])
+  F25 = sapply(fit@report, function(x) x$F[ny, 1])
+  B05 = sapply(fit@report, function(x) x$B[1]) / 1E6
+  data.frame(OM = lab,
+             B2005_kt = paste0(round(median(B05)), " (", round(min(B05)), "-", round(max(B05)), ")"),
+             B0_kt = paste0(round(median(B0)), " (", round(min(B0)), "-", round(max(B0)), ")"),
+             SSB2025_SSB0 = paste0(round(median(D25), 2), " (", round(min(D25), 2), "-", round(max(D25), 2), ")"),
+             F2025 = paste0(round(median(F25), 2), " (", round(min(F25), 2), "-", round(max(F25), 2), ")"))
+}
+rbind(summ(fit1, "Reference (all indices)"), summ(fit2, "Sensitivity (Chinese CPUE only)"))
+```
+
+## Save the operating model
+
+```{r save, echo=TRUE, eval=TRUE}
+dir.create("OMs", showWarnings = FALSE)
+saveRDS(OM1, "OMs/NFS_OM_Reference.rds")
+```
+
+## Summary of assumptions and model specifications
+
+| Component | Reference OM (annual) | Half-year sensitivity |
+|:--|:--|:--|
+| Stock structure | Single stock-wide population, winter–spring and autumn cohorts combined; one fleet | As reference |
+| Time step / years | Annual, 2005–2025 | Six-month blocks (Jan–Jun, Jul–Dec), 2005–2025 |
+| Catch | NPFC footprint workbook, sum over members (incl. Japanese national waters); lognormal SD 0.05; catch-conditioned | Annual catch split 10% Jan–Jun / 90% Jul–Dec (5% and 25% tested) |
+| Indices | China jig (GBM, winter–spring), Japan jig (autumn), Chinese Taipei jig, Japan driftnet survey (winter–spring, autumn); proportional to vulnerable biomass; equal likelihood weights | As reference, assigned to Jul–Dec |
+| Index observation error (SD) | China 0.37, Japan jig 0.85, survey 0.63 (SPiCT estimates); Chinese Taipei reported CV, min 0.37 | As reference |
+| Ages | 0 pre-recruit (unfished); 1 fished and mature; 2 placeholder (M = 10) | 0 hatchling; 1 juvenile (fished); 2 spawner; 3 placeholder (M = 10) |
+| Natural mortality | U(0.6, 1.2) yr<sup>-1</sup> by simulation, ages 0–1 | Half the annual rate per block, ages 0–2 |
+| Selectivity | Fixed: age 1 only | Fixed: age 1 only (spawners not fished) |
+| Maturity / spawning | Age 1 fully mature; spawning at 0.75 of the year | Age 2 fully mature; spawning at 0.5 of the block |
+| Weight | W = 2.60e-5 ML<sup>3.021</sup> (WP06); ML 270 mm at age 1 (~0.6 kg) | ML 250 mm (age 1) and 330 mm (age 2) |
+| Stock-recruitment | Beverton-Holt, h = 0.8; σ<sub>R</sub> = 0.6 (projection autocorrelation from estimated deviations) | As reference; recruitment estimated every block |
+| Initial conditions | Not unfished: 2005 abundance estimated (early recruitment deviations) | As reference |
+| Estimation | RCM (SAMtool), R0, recruitment deviations, F by year; max F = 3; mean_fit; non-converged simulations dropped | As reference |
+| Simulations | 24 (24 converged) | 24 (13–14 converged) |
+| Projections | 30 years | Not projected |
+
+# Results
+
+## Historical reconstruction
+
+The conditioned operating model reproduces the RCM estimates in the historical period (lines: operating model simulations, points: RCM estimates):
+
+```{r hist_check, echo=TRUE, eval=TRUE, fig.width = 5.5, fig.height = 3.5}
+Hist1 = Simulate(OM1, silent = TRUE)
+
+par(mfrow=c(1,1), mai=c(0.4,0.7,0.1,0.05))
+Bsim = apply(Hist1@TSdata$Biomass, 1:2, sum) / 1E6
+Brcm = sapply(fit1@report, function(x) x$B[1:ny]) / 1E6
+matplot(Years, t(Bsim), type = 'l', lty = 1, col = '#0000ff40', ylab = "Biomass (kt)", ylim = c(0, max(Bsim)))
+matpoints(Years, Brcm, pch = 1, cex = 0.5, col = 'red'); grid()
+```
+
+## Example projections
+
+Example projections are shown for current catch (CurC), average catch (AvC), an index-slope MP (Islope1) and no fishing (NFref). These are for illustration only; MPs for short-lived species need to be designed for the specific characteristics of the stock and available data (e.g. in-season indices). Note that NFref is a reference MP that exploits perfect information and is not a feasible management option.
+
+```{r projections, echo=TRUE, eval=TRUE, fig.width = 7.5, fig.height = 3.2}
+MPs = c("CurC", "AvC", "Islope1", "NFref")
+MSE1 = Project(Hist1, MPs = MPs, silent = TRUE)
+
+mpcols = c("black", "blue", "green", "red")
+pyrs = max(Years) + 1:OM1@proyears
+D = apply(MSE1@SSB / MSE1@OM$SSB0, 2:3, median)
+Cat = apply(MSE1@Catch, 2:3, median) / 1E6
+par(mfrow=c(1,2), mai=c(0.4,0.6,0.1,0.05))
+matplot(pyrs, t(D), type = 'l', lty = 1, lwd = 2, col = mpcols, ylim = c(0, max(1, max(D))), ylab = "Median SSB / SSB0"); grid()
+legend('bottomright', legend = MPs, text.col = mpcols, bty = 'n', cex = 0.8)
+matplot(pyrs, t(Cat), type = 'l', lty = 1, lwd = 2, col = mpcols, ylab = "Median catch (kt)"); grid()
+```
+
+Given the high productivity implied by a one-year life cycle and a steepness of 0.8, the stock recovers quickly under the recent catch level (CurC, around 18 kt), while the average catch of the historical period (AvC, around 53 kt) keeps the stock depleted.
+
+# Version Notes
+
+These operating models are subject to ongoing testing and development. If you find a bug or a problem please send a report to <tom@bluematterscience.com> so that it can be fixed!
+
+<br>
+<hr>
+
+
+# In Development
+
+Outstanding tasks:
+
+```{r ToDo, eval=T,echo=F}
+
+plotatab2('Tables/Various.xlsx','ToDo')
+
+```
+
+<br>
+<hr>
+
+# Software
+
+## OpenMSE
+
+The [openMSE R package](https://openmse.com) was used to organize fishery data, define operating models, condition operating models to data, and specify and test management options.
+
+Visit the [OpenMSE website](https://openmse.com) for more information on the framework including tutorial and case studies.
+
+The Rapid Conditioning Model is also [described there](https://openmse.com/tutorial-rcm).
+
+<br>
+<hr>
+
+# References
+
+<div class="hanging-indent">
+
+Hordyk, A., Huynh, Q., Carruthers, T. 2025. OpenMSE: An open-source R package for Management strategy evaluation, available from: https://openmse.com
+
+Huynh, Q. Rapid Conditioning Model (RCM). SAMtool package documentation. https://samtool.openmse.com/reference/RCM.html
+
+NPFC. 2026. Annual Report Summary Footprint - Squids (Rev. 3). [xlsx](Data/NPFC-2026-AR-Annual Summary Footprint-Squids (Rev3)_0.xlsx)
+
+NPFC-2026-SSC NFS04-WP01 (Rev. 1). Five-year work plan of the SSC NFS. [docx](Refs/NPFC-2026-SSC NFS04-WP01(Rev1) Five-year Work Plan of SSC NFS_0.docx)
+
+NPFC-2026-SSC NFS04-WP02 (Rev. 1). Species summary for neon flying squid. [docx](Refs/NPFC-2026-SSC NFS04-WP02(Rev1) Species summary for neon flying squid.docx)
+
+Nishizawa, B., Matsui, H., Sakai, O. and Oshima, K. 2026. Standardized CPUE for the autumn cohort of neon flying squid caught by Japanese squid jigging fishery in the North Pacific from 2005 to 2025. NPFC-2026-SSC NFS04-WP03. [docx](Refs/NPFC-2026-SSC NFS04-WP03 Japanese fishery CPUE for autumn cohort.docx)
+
+NPFC-2026-SSC NFS04-WP04. Standardized CPUE of neon flying squid caught by Chinese Taipei's squid jigging fishery. [docx](Refs/NPFC-2026-SSC NFS04-WP04 NFS_CpueStd2025_CT.docx)
+
+Song, M. and Wang, J. 2026. Standardized CPUE indices for neon flying squid using Chinese squid-jigging fishery data from 2005 to 2025. NPFC-2026-SSC NFS04-WP05. [docx](Refs/NPFC-2026-SSC NFS04-WP05 Standardized CPUE 2005-2025_Chn.docx)
+
+He, J., Liu, B. and Wang, J. 2026. Size composition of neon flying squid based on Chinese squid jigging survey in the Northwest Pacific Ocean. NPFC-2026-SSC NFS04-WP06. [docx](Refs/NPFC-2026-SSC NFS04-WP06 Size composition NFS Chinese squid jigging survey.docx)
+
+Song, M. and Wang, J. 2026. Updated stock assessment of neon flying squid in the Northwest Pacific using JABBA model up to 2025. NPFC-2026-SSC NFS04-WP07. [docx](Refs/NPFC-2026-SSC NFS04-WP07 Updated stock assessment JABBA_Chn.docx)
+
+Nishizawa, B., Matsui, H., Sakai, O. and Oshima, K. 2026. Standardized CPUE for the autumn and winter-spring cohorts of neon flying squid based on Japanese driftnet surveys from 2001 to 2025. NPFC-2026-SSC NFS04-WP09. [docx](Refs/NPFC-2026-SSC NFS04-WP09 JapaneseSurveyCPUE.docx)
+
+Nishizawa, B., Matsui, H., Sakai, O. and Oshima, K. 2026. Preliminary stock assessment of the winter-spring cohort of neon flying squid using the stochastic surplus production model in continuous time (SPiCT) from 2005 to 2024. NPFC-2026-SSC NFS04-WP10. [docx](Refs/NPFC-2026-SSC NFS04-WP10 SPiCT_Jpn.docx)
+
+Bi, R. 2026. Extending joint CPUE standardization for neon flying squid. NPFC-2026-SSC NFS04-IP03. [pdf](Refs/NPFC-2026-SSC NFS04-IP03 JointCPUE_2026JUL.pdf)
+
+</div>
+
+<br>
+<hr>
+<br>
+<br>
+<br>
+<br>

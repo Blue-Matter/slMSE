@@ -11,13 +11,18 @@ get_Landings = function(obj){
 }
 
 
-convq = function(ts, Seasons){
-  if(Seasons ==4){
-    temp = ts
+
+
+convq = function(ts, nseas=4){
+  if(nseas ==4){
+
+   temp = ts
+
   }else{
     tslab = floor(as.numeric(colnames(ts)))
     yrs = unique(tslab)
-    n2agg = Seasons/4
+    tsinyr = length(tslab)/length(yrs)
+    n2agg = tsinyr/4
     ds = dim(ts)
     temp = apply(array(ts, c(ds[1],n2agg, ds[2]/n2agg, ds[3])), c(1,3,4), sum)
     dimnames(temp) = list(dimnames(ts)[[1]],rep(yrs,each=4)+rep(c(0,0.25,0.5,0.75),length(yrs)),dimnames(ts)[[3]])
@@ -26,9 +31,9 @@ convq = function(ts, Seasons){
   temp
 }
 
-convyr = function(ts, Seasons){
+convyr = function(ts, nseas=4){
   ds = dim(ts)
-  temp = apply(array(ts, c(ds[1],Seasons, ds[2]/Seasons, ds[3])),c(1,3,4),sum)
+  temp = apply(array(ts, c(ds[1],nseas, ds[2]/nseas, ds[3])),c(1,3,4),sum)
   dimnames(temp) = list(dimnames(ts)[[1]],unique(floor(as.numeric(dimnames(ts)[[2]]))),dimnames(ts)[[3]])
   temp
 }
@@ -69,9 +74,9 @@ sampleCAL = function(NAA, sel){
 
 }
 
-invent_CAL = function(obj, ESS = 200){ # hack to create mulitnomial catch at length by fleet and stock
+invent_CAL = function(obj, Ess = 200){ # hack to create mulitnomial catch at length by fleet and stock
 
-  Seasons = Seasons(obj)
+  nseas = Seasons(obj)
   ns = nStock(obj)
   nf = nFleet(obj)
   CALmids = obj@OM@Stock[[1]]@Length@Classes
@@ -90,7 +95,7 @@ invent_CAL = function(obj, ESS = 200){ # hack to create mulitnomial catch at len
           Nage = apply(NAAs[[ss]][sim,,yy,,drop=F],2,sum)
           sel = obj@OM@Fleet[[ss]][[ff]]@Selectivity@MeanAtAge[1,,1,1]
           Nlen = (sel*Nage)%*%ALK
-          CAL[sim,ss,ff,yy,] = rmultinom(1,ESS,Nlen)
+          CAL[sim,ss,ff,yy,] = rmultinom(1,Ess,Nlen)
         }
       }
     }
@@ -99,13 +104,15 @@ invent_CAL = function(obj, ESS = 200){ # hack to create mulitnomial catch at len
   dimnames(CAL) = list(paste0("sim_",1:nsim), names(obj@OM@Stock), names(obj@OM@Fleet[[1]]),years,CALmids)
   CAL_y = apply(array(CAL,c(nsim,ns,nf,Seasons(obj),nYear(obj),nl)),c(1,2,3,5,6),sum)
   dimnames(CAL_y) = list(paste0("sim_",1:nsim), names(obj@OM@Stock), names(obj@OM@Fleet[[1]]),CalcYears(nYear(obj),0,obj@OM@CurrentYear,1),CALmids)
-  if(Seasons == 4){
+
+ if(nseas == 4){
     CAL_q = CAL
+
   }else{
-    n2agg = Seasons/4
+    n2agg = nseas/4
     tslab = Years(obj,"Hist")
-    CAL_q = apply(array(CAL, c(nsim,ns,nf, n2agg, length(tslab)/n2agg,nl),c(1,2,3,5,6)),sum)
-    yrs = CalcYears(nYear,0,hist@OM@CurrentYear)
+    CAL_q = apply(array(CAL, c(nsim,ns,nf, n2agg, length(tslab)/n2agg,nl)),c(1,2,3,5,6),sum)
+    yrs = CalcYears(nYear(obj),0,obj@OM@CurrentYear)
     tslab = rep(yrs,each=2)+rep((0:3)/4,length(yrs))
     dimnames(CAL_q) = list(paste0("sim_",1:nsim), names(obj@OM@Stock), names(obj@OM@Fleet[[1]]),tslab,CALmids)
   }
@@ -114,19 +121,20 @@ invent_CAL = function(obj, ESS = 200){ # hack to create mulitnomial catch at len
 
 slSimData = function(obj){
 
+  nseas = Seasons(obj)
   dat = obj@Data
 
   Landings = get_Landings(dat)
-  Landings_q = convq(Landings, Seasons = Seasons)
-  Landings_y = convyr(Landings, Seasons = Seasons)
+  Landings_q = convq(Landings, nseas = nseas)
+  Landings_y = convyr(Landings, nseas = nseas)
 
   CPUE = get_CPUE(dat)
-  CPUE_q = convq(CPUE, Seasons = Seasons)
-  CPUE_y = convyr(CPUE, Seasons = Seasons)
+  CPUE_q = convq(CPUE, nseas = nseas)
+  CPUE_y = convyr(CPUE, nseas = nseas)
 
   Survey = get_Survey(dat)
-  Survey_q = convq(Survey, Seasons = Seasons)
-  Survey_y = convyr(Survey, Seasons = Seasons)
+  Survey_q = convq(Survey, nseas = nseas)
+  Survey_y = convyr(Survey, nseas = nseas)
 
   # CAL = get_CAL(dat) # coming when obs provides LandingsAtSize
   CALs = invent_CAL(obj)

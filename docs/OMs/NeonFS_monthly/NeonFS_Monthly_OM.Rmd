@@ -1,0 +1,427 @@
+---
+title: "Neon Flying Squid: Two-Cohort Monthly Operating Model (slMSE)"
+author: "Tom Carruthers <tom@bluematterscience.com>"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  rmarkdown::html_document:
+    number_sections: yes
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+<style type="text/css">
+body{ font-size: 12px; }
+td { font-size: 11px; }
+h1 { font-size: 18px; color: DarkBlue; }
+h2 { font-size: 15px; color: DarkBlue; }
+h3 { font-size: 14px; color: DarkBlue; }
+pre { font-size: 10px; overflow-x: auto; }
+.caption { font-size: 11px; font-style: italic; }
+</style>
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      dpi = 110, fig.width = 9, fig.height = 5)
+# Delete the rds files in OMs/ to re-run the expensive steps
+# (JABBA runs about 5 min, JABBA emulation about 3 min).
+```
+
+# Purpose
+
+This page sets out a monthly simulator for North Pacific neon flying squid with two sub-stocks, the winter–spring and autumn cohorts. It is built with the slMSE wrappers (`slStock`, `slFleet`, `slCombineFleets`, `slOM`) on MSEtool 4.
+
+The historical dynamics reproduce the observed catch west and east of 170°E and emulate the JABBA cohort assessments (NPFC-2026-SSC NFS04-WP07). Each of 48 simulations follows one posterior draw of a rebuilt JABBA assessment for each cohort. Annual recruitment deviations are solved so that the OM's SSB/SSB0 follows JABBA's B/K for 2005–2025. The OM is not fitted to the abundance indices directly; it inherits them through JABBA.
+
+All code is shown below; the helper files in `R/` are displayed in full where they are first used.
+
+# Overview
+
+The work proceeds in five steps:
+
+1. **Catch by area** (Section 3). Annual catch west and east of 170°E for 2005–2025 is compiled from the NPFC 2026 annual report summary. Redacted values are filled where they can be inferred. West catch is assigned to the winter–spring cohort and east catch to the autumn cohort (the SSC 170°E rule).
+2. **Two-cohort monthly OM structure** (Sections 4.1–4.2, 4.4–4.5). Two self-recruiting sub-stocks are specified with `slStock`, with monthly ages 1–13 and cohort-specific recruitment timing, growth and natural mortality. Two area-specific fleets with seasonal effort are specified with `slFleet` and assembled with `slOM` (MSEtool 4). Each fleet catches one cohort.
+3. **Rebuilding the JABBA cohort assessments** (Section 4.3.1). The WP07 GAM-index cohort runs (Schaefer) are rebuilt with JABBA, and 48 posterior draws are taken.
+4. **JABBA emulation** (Sections 4.3.2–4.3.4). For each draw, R0 is set from K. Annual recruitment deviations and fleet effort are solved together so that the OM's SSB/SSB0 follows the draw's B/K and the observed catches are kept. The result is the operating model.
+5. **Results** (Section 5). Catch fit, biomass, depletion and fishing mortality of the OM, followed by observations and next steps (Sections 6–7).
+
+Supporting steps: the effort solver used to match catches (Section 4.6), and the choice of recruitment timing (Section 4.2).
+
+```{r packages}
+suppressMessages({
+  library(openMSE)    # MSEtool 4.0.0 (dev), SAMtool, DLMtool
+  library(slMSE)
+  library(ggplot2)
+  library(patchwork)
+  library(kableExtra)
+  library(JABBA)      # 2.3.7 (github.com/jabbamodel/JABBA), with JAGS
+})
+source("R/summaries.R")
+source("R/plots.R")
+source("R/emulate_jabba.R")
+```
+
+# Catch by area
+
+Catch west and east of 170°E is taken from the NPFC 2026 annual report summary. Under the SSC rule, catch west of 170°E is assigned to the winter–spring cohort and catch east of 170°E to the autumn cohort.
+
+```{r catch-code, code = readLines("R/catch_by_area.R")}
+```
+
+```{r catch-data}
+catch <- NFS_catch_by_area(
+  "Data/NPFC-2026-AR-Annual Summary Footprint-Squids (Rev3)_0.xlsx")$total
+catch$WestShare <- round(catch$West / (catch$West + catch$East), 2)
+tab_catch <- data.frame(Year = as.character(catch$Year),
+                        `West of 170°E (t)` = format(round(catch$West), big.mark = ","),
+                        `East of 170°E (t)` = format(round(catch$East), big.mark = ","),
+                        `West share` = sprintf("%.2f", catch$WestShare),
+                        check.names = FALSE)
+kable(tab_catch, "simple", align = "lrrr",
+      caption = paste("Table 1. Annual catch (t) of neon flying squid west and east of 170°E,",
+                      "all members, and the west share. 2003-2004 are not shown; in the model they",
+                      "are burn-in years fished at the 2005 catch."))
+```
+
+```{r catch-fig, fig.height = 3.2, fig.cap = "**Figure 1.** Observed annual catch (kt) west and east of 170°E, all members. West catch is assigned to the winter–spring cohort and east catch to the autumn cohort."}
+plot_catch_area(catch)
+```
+
+# Operating model
+
+## Structure
+
+* **Time step:** monthly (`Seasons = 12`). The model starts in 2003; 2003–2004 are burn-in years fished at the 2005 catch, so 2005 does not begin from unfished conditions.
+* **Ages:** 1–13 months with no plus group, giving a semelparous, roughly one-year life span.
+* **Sub-stocks:** the winter–spring cohort (hatch Jan–May) and the autumn cohort (hatch Sep–Feb). Each is self-recruiting, with Beverton–Holt h = 0.8, a seasonal R0 shaped by a wrapped normal, and monthly log-normal recruitment deviations (σ = 0.6, AC = 0.8).
+* **Areas and fleets:** area 1 is west of 170°E and area 2 is east. The west fleet fishes only area 1 and the east fleet only area 2. The winter–spring cohort is held in area 1 and the autumn cohort in area 2, so each fleet catches one cohort, matching the 170°E rule.
+
+## Recruitment timing
+
+The seasonal pattern of recruitment for each cohort (Figure 7, top left) was set from the hatching periods in the SSC species summary (NPFC-2026-SSC NFS04-WP02, Rev 1). It was not estimated from data.
+
+* **Hatching periods.** WP02 describes the North Pacific population as two cohorts: an autumn (fall) cohort hatching from September to February, and a winter–spring cohort hatching mainly from January to May but extending to August.
+* **Peak month.** The peak hatch month was taken as the middle of each main window: March for the winter–spring cohort (January–May) and November for the autumn cohort (September–February; the six-month window's midpoint lies between November and December, rounded to November).
+* **Age at recruitment.** Recruits enter the model at age 1 month (`rec_age = 1`), so recruitment is the hatching distribution shifted one month later. The peak is in April (`rec_mu = 4`) for the winter–spring cohort and December (`rec_mu = 12`) for the autumn cohort.
+* **Spread.** Each cohort's recruitment follows a wrapped normal distribution over calendar months (`MSEtool::WrappedNormal`) with a standard deviation of 1.5 months. About 95% of annual recruitment then falls within ±3 months of the peak, roughly matching the five- to six-month hatching windows in WP02.
+
+These choices are assumptions and have two limitations:
+
+* The distribution is symmetric, so the winter–spring tail into June–August described in WP02 is not represented.
+* How hatching is spread across months within each window is assumed, not observed. Hatch-date distributions back-calculated from statolith ages would be the natural replacement; `NFS_settings()` accepts any peak and spread, and the R0 array can take any 12-month vector.
+
+Each cohort is also assumed to recruit only from its own spawners, a year after its own hatching. WP02 gives maturation and spawning at 7–10 months of age with an estimated one-year life span. Spawning at 7–10 months by winter–spring squid hatched in January–May would fall in August–March, overlapping the autumn hatching window, so some exchange between cohorts is possible. MSEtool's `SRR@SPFrom` would allow one cohort's spawners to produce the other cohort's recruits, as a structural sensitivity.
+
+## Emulating JABBA process errors in recruitment deviations
+
+This section builds the operating model's historical dynamics so that they follow the JABBA cohort assessments (NPFC-2026-SSC NFS04-WP07). Each simulation follows one posterior draw of B/K for 2005–2025. Tuning R0 alone, with random recruitment deviations, cannot reach the JABBA winter–spring depletion: at any R0 that can take the 2005–2008 catches, the cohort recovers to near unfished by 2025. The emulation therefore solves the recruitment deviations as well; they go in `SRR@RecDevHist`.
+
+### Rebuilding the JABBA cohort assessments
+
+The WP07 base case (GAM-standardized CPUE, Schaefer model) was rebuilt for each cohort with JABBA 2.3.7 from the [jabbamodel/JABBA](https://github.com/jabbamodel/JABBA) repository, run with JAGS. The inputs were:
+
+* **Catch:** catch west of 170°E for the winter–spring cohort and east of 170°E for the autumn cohort (Table 1).
+* **Winter–spring index:** the GAM-standardized Chinese jigging CPUE for 2005–2025, from WP05 Table 5.
+* **Autumn index:** the autumn GAM series is published only as a figure (WP05 Fig. 7), so 2012–2025 was digitized from the figure's pixels. Applied to the winter–spring GAM line in the same figure, the same procedure reproduces the WP05 Table 5 values to within about 0.07 where the line is not hidden by others. The autumn panel has about six times finer vertical resolution, so the autumn values should be accurate to about ±0.02.
+* **Priors, as stated in WP07:**
+  * r in 0.6–1.5;
+  * K from 1 to 10 times the maximum catch;
+  * default q and initial depletion (psi);
+  * inverse-gamma(0.001, 0.001) on the process variance.
+
+  JABBA's `range` priors are not uniform. They are lognormal, with the stated range spanning ±2 SD on the log scale. This explains why WP07's winter–spring posterior (FMSY 0.237, i.e. r ≈ 0.47) lies below the stated lower bound for r.
+
+```{r jabba-run}
+library(JABBA)
+source("R/build_om.R")       # NFS_settings(), make_NFS_OM(); shown in Section 4.5
+source("R/solve_effort.R")   # fast_control(), annual_landings(); shown in Section 4.6
+source("R/set_R0.R")         # set_R0(); shown in Section 4.3.3
+
+yrs <- 2005:2025
+ws_gam  <- c(5.05, 5.96, 5.81, 1.66, 0.75, 0.97, 1.72, 0.87, 1.17, 0.86, 1.21, 1.11,
+             0.89, 1.14, 1.45, 0.38, 0.95, 0.88, 0.21, 0.63, 0.13)        # WP05 Table 5
+aut_gam <- c(rep(NA, 7), 0.304, 0.638, 0.696, 0.404, 0.608, 1.177, 1.523, 1.969,
+             1.831, 1.038, 0.946, 0.992, 0.465, 1.365)                    # digitized, WP05 Fig. 7
+
+if (!file.exists("OMs/jabba_fits.rds")) {
+  fits <- list(WS  = run_jabba_cohort("WS",  yrs, catch$West, ws_gam),
+               AUT = run_jabba_cohort("AUT", yrs, catch$East, aut_gam))
+  saveRDS(fits, "OMs/jabba_fits.rds")
+} else fits <- readRDS("OMs/jabba_fits.rds")
+```
+
+```{r jabba-compare}
+est <- function(f, v) f$estimates[v, ]
+fmt <- function(f, v, sc = 1, d = 2)
+  sprintf(paste0("%.", d, "f (%.", d, "f-%.", d, "f)"), est(f, v)[1] / sc, est(f, v)[2] / sc, est(f, v)[3] / sc)
+jc <- data.frame(
+  Quantity = c("B2025/BMSY", "FMSY", "MSY (kt)", "BMSY (kt)"),
+  `Winter-spring, rebuild` = c(fmt(fits$WS, "B_Bmsy.cur", d = 3), fmt(fits$WS, "Hmsy", d = 3),
+                               fmt(fits$WS, "MSY", 1000, 1), fmt(fits$WS, "SBmsy", 1000, 0)),
+  `Winter-spring, WP07` = c("0.125 (0.073-0.200)", "0.237 (0.177-0.318)",
+                            "57.4 (42.5-78.9)", "239 (180-342)"),
+  `Autumn, rebuild` = c(fmt(fits$AUT, "B_Bmsy.cur", d = 3), fmt(fits$AUT, "Hmsy", d = 3),
+                        fmt(fits$AUT, "MSY", 1000, 1), fmt(fits$AUT, "SBmsy", 1000, 0)),
+  `Autumn, WP07` = c("1.623 (1.066-2.282)", "0.363 (0.257-0.500)",
+                     "12.9 (7.1-31.7)", "36 (20-85)"),
+  check.names = FALSE)
+kable(jc, "simple", caption = paste("Table 2. Rebuilt JABBA cohort assessments (GAM index) against WP07 Tables 2-3, median",
+  "(95% credible interval). WP07 does not report its observation-error settings or exact",
+  "catch series, so an exact match is not expected."))
+```
+
+The rebuilt runs are close to WP07 but not identical (Table 2). The 2025 depletion matches well. FMSY and MSY are somewhat higher than in WP07, especially for the autumn cohort, where the index was digitized.
+
+```{r jabba-fits-fig, fig.height = 3.8, fig.cap = "**Figure 2.** Fits of the rebuilt JABBA cohort assessments to the GAM-standardized CPUE indices: observed index (points) and predicted index (line and band: posterior median and 95% credible interval). Winter–spring: WP05 Table 5, 2005–2025. Autumn: digitized from WP05 Fig. 7, 2012–2025."}
+plot_jabba_fits(fits)
+```
+
+```{r jabba-fits-table}
+kable(jabba_fit_table(fits), "simple", digits = 2,
+      caption = paste("Table 3. Fit statistics of the rebuilt JABBA cohort assessments to their",
+                      "GAM indices (log scale), with the estimated observation and process",
+                      "standard deviations."))
+```
+
+Neither cohort's index is fitted closely (Figure 2, Table 3).
+
+* **Winter–spring.** The predicted index declines too slowly after the 2008 collapse, sitting 2–2.6 times above the observed index in 2008–2010. It then falls below the index in 2018–2022, by a factor of 2–4 in 2018, 2019 and 2021. The 2025 index (0.13) is a quarter of the predicted value (0.54); the low 2025 depletion therefore comes from the modelled dynamics rather than from that final index point.
+* **Autumn.** The predicted index is almost flat at 0.8–0.95. It lies above the index in 2012–2016 and 2024 and below it in 2017–2020 and 2025, and the correlation between observed and predicted is slightly negative (−0.18). The autumn trajectory is driven mostly by the catch and the priors, not by the index.
+
+In both runs, the estimated observation SD (0.74 winter–spring, 0.62 autumn) is six to seven times the process SD (0.12 and 0.10). JABBA therefore treats most of the variation in the indices as observation error rather than as changes in biomass.
+
+```{r jabba-procdev-fig, fig.height = 3.6, fig.cap = "**Figure 3.** Process-error deviations (log biomass) from the rebuilt JABBA cohort assessments, median and 95% credible interval."}
+plot_jabba_procdev(fits)
+```
+
+The estimated process deviations are small (Figure 3). Their median is within ±0.06 of zero in every year, and the process standard deviation is about 0.1. In JABBA, the winter–spring decline from B/K ≈ 0.9 in 2005 to 0.03–0.07 after 2017 comes mainly from the Schaefer dynamics. With r ≈ 0.6, surplus production at low biomass is about the size of the recent catch, so the stock stays low. The index is fitted with a large observation variance.
+
+### Why the process errors cannot be used directly
+
+The OM is much more productive than the Schaefer model fitted by JABBA. With Beverton–Holt h = 0.8, recruits per spawner at low stock size are about 16 times the replacement level (4h/(1 − h)), and the life span is one year. Feeding JABBA's process deviations in as recruitment deviations would therefore not reproduce JABBA's biomass. The OM would rebound within a year or two.
+
+Instead, the recruitment deviations are solved so that the OM follows each JABBA biomass trajectory. They then carry both JABBA's process errors and the productivity difference between the two models.
+
+### Method
+
+For each of 48 simulations, one posterior draw of each cohort assessment gives K and the trajectory B_y/K for 2005–2025. The OM is made to follow it in three ways:
+
+1. **Scale.** R0 is set so that the OM's unfished mean annual biomass equals K.
+2. **Depletion.** An annual recruitment multiplier is solved so that the OM's SSB_y/SSB0 equals JABBA's B_y/K in every year. It applies to every month of the recruitment that spawns in year y:
+   * **Winter–spring:** recruits of calendar year y − 1, with SSB_y summed from July y − 1 to June y.
+   * **Autumn:** recruits of July y − 1 to June y, with SSB_y summed over calendar year y.
+
+   These spawning-year windows contain a single cohort. A calendar-year window for the winter–spring cohort would mix the spawners of year y with the partly mature, heavily fished recruits of the same year, which made the solution oscillate.
+3. **Catch.** Effort is solved at the same time so that annual catches are still matched.
+
+Each cohort's catch and its spawning come from the same fish. Winter–spring recruits of year y − 1 are caught by the west fleet in July–November y − 1 and spawn by June y. The recruitment multiplier and the effort are therefore updated as a pair. With C the catch, S the escapement in catch units (SSB_y/SSB0 times the cohort's unfished spawning biomass), φ = C/(C + S), and * marking targets:
+
+* recruitment multiplier ← multiplier × (C\* + S\*)/(C + S), which sets the cohort's total size;
+* effort ← effort × log(1 − φ\*)/log(1 − φ), which sets the share of the cohort that is caught.
+
+A first version updated each control from its own target alone. It oscillated in 2017–2025, when the JABBA winter–spring target was 3–6% of K and the catch was a large share of the cohort. The paired update converges in under 20 iterations.
+
+```{r setR0-code, code = readLines("R/set_R0.R")}
+```
+
+```{r emulate-code, code = readLines("R/emulate_jabba.R")}
+```
+
+```{r emulate}
+if (!file.exists("OMs/NFS_monthly_OM_jabba.rds")) {
+  draws <- lapply(fits, jabba_draws, nSim = 48, years = yrs)
+  xj <- make_NFS_OM(catch, nSim = 48, seed = 1)
+  xj <- emulate_jabba(xj, draws, maxit = 40)
+  saveRDS(xj, "OMs/NFS_monthly_OM_jabba.rds")
+} else xj <- readRDS("OMs/NFS_monthly_OM_jabba.rds")
+c(simulations = xj$om@nSim, converged = sum(xj$converged))
+```
+
+```{r emulate-trace-fig, fig.height = 3.2, fig.width = 6.5, fig.cap = "**Figure 4.** Convergence of the JABBA emulation (48 simulations, log scale): the worst absolute log ratio of OM to target, for annual catch and for each cohort's B/K, by iteration. The dotted line is the 1% tolerance."}
+plot_emu_trace(xj)
+```
+
+### Results
+
+```{r emulate-traj-fig, fig.height = 3.8, fig.cap = "**Figure 5.** OM SSB/SSB0 (points and bars: median and 90% interval over 48 simulations) against the JABBA B/K posterior draws it was solved to (line and band: median and 90% interval over the same 48 draws), by cohort. The OM matches each draw to within 1%, so the points sit on the JABBA line."}
+plot_emu_traj(xj)
+```
+
+```{r emulate-recdev-fig, fig.height = 3.8, fig.cap = "**Figure 6.** Log recruitment multipliers solved for the OM (solid line and band: median and 90% interval), indexed by the year in which the cohort spawns, against the JABBA process deviations for the same year (dashed, median)."}
+plot_emu_recdev(xj, fits)
+```
+
+```{r emulate-table}
+qf3 <- function(v, d = 2) sprintf(paste0("%.", d, "f (%.", d, "f to %.", d, "f)"),
+                                  median(v), quantile(v, 0.05), quantile(v, 0.95))
+ldw <- emu_cohort_logdev(xj, "WS"); lda <- emu_cohort_logdev(xj, "AUT")
+kable(data.frame(
+  Cohort = c("Winter-spring", "Autumn"),
+  `K (kt)` = c(qf3(xj$draws$WS$K / 1000, 0), qf3(xj$draws$AUT$K / 1000, 0)),
+  `R0 (billions)` = c(qf3(xj$R0$WS / 1e9, 3), qf3(xj$R0$AUT / 1e9, 3)),
+  `B2025/K` = c(qf3(xj$draws$WS$P[, "2025"], 3), qf3(xj$draws$AUT$P[, "2025"], 3)),
+  `Log multiplier, 2018-2025 mean` = c(qf3(rowMeans(ldw[, as.character(2018:2025)])),
+                                       qf3(rowMeans(lda[, as.character(2018:2025)]))),
+  check.names = FALSE), "simple",
+  caption = paste("Table 4. JABBA emulation by cohort, median (90% interval) over 48",
+                  "simulations: K, the R0 that gives it, 2025 depletion, and the mean log",
+                  "recruitment multiplier of cohorts spawning in 2018-2025."))
+```
+
+All 48 simulations follow their JABBA trajectories and the observed catches to within 1% (Figures 4 and 5).
+
+The winter–spring cohort needs recruitment that falls steadily below the Beverton–Holt expectation. The median log multiplier goes from +0.2 for the 2005 spawners to −1.0 by 2012, −1.5 in 2018 and −1.7 to −2.0 for the 2019–2025 spawners, i.e. recruitment at roughly 15–20% of expectation. The autumn multipliers stay close to zero, as do JABBA's own process deviations for both cohorts (Figure 6). The winter–spring deviations therefore mostly encode JABBA's lower productivity (r ≈ 0.6 against the OM's h = 0.8 with a one-year life span), not JABBA's process errors.
+
+Caveats:
+
+* The correspondence between JABBA's B/K (biomass at the start of the year, relative to K) and the OM's SSB/SSB0 (spawning production over a spawning year, relative to unfished equilibrium) is approximate. So is K as the OM's unfished mean annual biomass.
+* The rebuilt assessments differ somewhat from WP07 (Table 2). The autumn index is digitized.
+* Projection recruitment deviations are still generated internally (σ = 0.6, AC = 0.8 by month). They do not continue the recent low-recruitment state. How the winter–spring regime should be projected is an open choice.
+* The OM uses M = 1.2 per year for both cohorts (Section 4.4). It is saved as `OMs/NFS_monthly_OM_jabba.rds` and is the operating model used in Section 5.
+
+## Natural mortality
+
+Natural mortality is 1.2 per year (0.1 per month) for both cohorts, at all ages and in all simulations. A one-year life span with no plus group already removes all squid after age 13 months; M sets the survival within that year.
+
+An earlier version used lower and uncertain M (winter–spring U(0.3, 0.6) and autumn U(0.6, 1.2) per year), in an attempt to reach the JABBA winter–spring depletion by tuning R0 alone. That did not work and those rates are too low for an annual species, so M has been reset to 1.2 per year.
+
+## Settings and builders
+
+```{r om-code, code = readLines("R/build_om.R")}
+```
+
+```{r settings-table, echo = FALSE}
+s <- NFS_settings()
+pt <- data.frame(
+  Parameter = c("Natural mortality (monthly)", "Length at age (ML mm)", "Weight",
+                "Maturity", "Selectivity (both fleets)", "West fleet season",
+                "East fleet season", "Max monthly F"),
+  Value = c(sprintf("%.2f per month (%.1f per year), both cohorts, all simulations",
+                    s$WS$M[1], 12 * s$WS$M[1]),
+            sprintf("von Bertalanffy, K = %.2f per month; Linf %d (winter-spring), %d (autumn)",
+                    s$WS$K, s$WS$Linf, s$AUT$Linf),
+            "W (g) = 2.60e-5 ML^3.021",
+            sprintf("logistic, 50%% at %d months (matures at 7-10 months, WP02)", s$amat50),
+            "logistic (50% at 4 months), dome for spawners (50% loss at 11.5 months)",
+            "Jul-Nov, peak Sep (WP04-WP06)", "May-Sep, peak Aug (WP03)", s$maxF))
+kable(pt, "simple", caption = "Table 5. Biological and fleet settings of the operating model.")
+```
+
+```{r schedules, echo = FALSE, fig.height = 7, fig.width = 10, fig.cap = "**Figure 7.** Model schedules: recruitment (age 1 month) by calendar month for each cohort (see Recruitment timing); seasonal effort profile of each fleet; mantle length at age; and fleet selectivity and maturity at age."}
+x0 <- list(set = NFS_settings())
+plot_schedules(x0)
+```
+
+## Matching the catches
+
+MSEtool's historical dynamics are driven by effort. For each simulation, the annual effort level of each fleet is iterated until predicted catch matches observed catch to within 1%. The fixed seasonal profile spreads that effort over months. A simulation that cannot take the catch, even at the F cap, is flagged as infeasible.
+
+```{r effort-code, code = readLines("R/solve_effort.R")}
+```
+
+The solver is illustrated with eight simulations, each starting every year from the same placeholder effort (peak monthly effort 0.05). R0 is the K-based R0 of the first eight simulations of the JABBA emulation (Section 4.3), with recruitment deviations set to 1, so that each stock can comfortably take the catches. At the depletion of the JABBA emulation, where in some years the catch takes most of a cohort, this catch-ratio update converges slowly or not at all: catch then responds little to effort. That is why the emulation solves effort and recruitment together (Section 4.3.3).
+
+```{r effort-demo}
+if (!file.exists("OMs/effort_demo.rds")) {
+  demo <- make_NFS_OM(catch, nSim = 8, seed = 1)
+  for (i in 1:2) {
+    demo <- set_R0(demo, i, xj$R0[[i]][1:8])
+    demo$om@Stock[[i]]@SRR@RecDevHist <- xj$recdev[[i]][1:8, , drop = FALSE] * 0 + 1
+  }
+  demo <- solve_effort(demo, maxit = 15, verbose = FALSE, record = TRUE)
+  demo$om <- NULL                                 # keep the traces only
+  saveRDS(demo, "OMs/effort_demo.rds")
+} else demo <- readRDS("OMs/effort_demo.rds")
+kable(demo$trace, "simple", digits = 4,
+      col.names = c("Iteration", "Worst simulation", "Median simulation", "Simulations within 1%"),
+      caption = paste("Table 6. Convergence of the effort solver for eight simulations: the",
+                      "largest absolute log ratio of predicted to observed annual catch over fleets",
+                      "and years, for the worst and the median simulation, by iteration."))
+```
+
+```{r effort-demo-fig, fig.height = 5, fig.cap = "**Figure 8.** Predicted annual catch for eight simulations (grey lines) against observed catch (points), at the placeholder effort (left) and after solving (right)."}
+plot_effort_demo(demo, catch)
+```
+
+```{r effort-trace-fig, fig.height = 3.2, fig.width = 6, fig.cap = "**Figure 9.** Convergence of the effort solver (log scale): the largest absolute log ratio of predicted to observed annual catch over fleets and years, for the worst and the median simulation, at each iteration. The dotted line is the 1% tolerance."}
+plot_effort_trace(demo)
+```
+
+# Results
+
+The results below are for the operating model: the JABBA emulation of Section 4.3. That is 48 simulations, each following one posterior draw of the rebuilt JABBA cohort assessments, with R0 set from K and recruitment deviations solved to follow B/K.
+
+```{r om-final}
+hist <- Simulate(xj$om, silent = TRUE)
+keep <- which(xj$converged)
+wp07 <- list(WS = 0.125 / 2, AUT = 1.623 / 2)     # WP07 B2025/K (GAM index)
+c(simulations = xj$om@nSim, used = length(keep))
+```
+
+## Catch fit
+
+```{r catchfit-table}
+kable(catch_fit_table(hist, keep, catch), "simple", digits = c(0, 1, 3, 3),
+      caption = paste("Table 7. Catch fit of the OM (48 simulations): relative error of",
+                      "predicted against observed annual catch, 2005-2025, by fleet."))
+```
+
+```{r catchfit-fig, fig.height = 3.6, fig.cap = "**Figure 10.** Predicted annual catch of the OM for each simulation (grey lines) against observed catch (points), by fleet."}
+plot_catch_fit(hist, keep, catch)
+```
+
+## Biomass, depletion and fishing mortality
+
+```{r biomass-fig, fig.height = 5.5, fig.cap = "**Figure 11.** Monthly biomass of the OM by cohort, median and 90% interval over simulations."}
+plot_biomass(hist, keep)
+```
+
+```{r dep-fig, fig.height = 4, fig.cap = "**Figure 12.** Annual SSB of the OM relative to unfished equilibrium (SSB/SSB0, calendar year), by cohort, median and 90% interval. Crosses at 2025 are the WP07 JABBA B2025/K. The OM follows the rebuilt JABBA B/K draws (Figure 4) on spawning-year windows, so calendar-year values differ somewhat; for the winter–spring cohort in 2025, 0.08 against 0.06."}
+plot_depletion(hist, keep, type = "Equilibrium", target = wp07)
+```
+
+```{r depdyn-fig, fig.height = 4, fig.cap = "**Figure 13.** Annual SSB of the OM relative to the dynamic unfished trajectory (same recruitment deviations, no fishing). This isolates the effect of fishing from the recruitment deviations."}
+plot_depletion(hist, keep, type = "Dynamic")
+```
+
+```{r F-fig, fig.height = 5.5, fig.cap = "**Figure 14.** Median monthly apical fishing mortality of the OM by fleet."}
+plot_F(hist, keep)
+```
+
+# Observations
+
+1. **The OM reproduces both the catches and the JABBA depletion history.** Annual catches are matched to within 0.7% (west) and 0.05% (east) in all 48 simulations (Table 7, Figure 10). Each simulation follows its JABBA B/K draw to within 1% (Figures 4–5). On calendar years, 2025 SSB/SSB0 is 0.08 (0.03–0.16) for the winter–spring cohort and 0.88 (0.73–1.03) for the autumn cohort (Figure 12), against WP07's 0.06 and 0.81.
+2. **Most of the winter–spring depletion comes from recruitment, not fishing.** Relative to the dynamic unfished trajectory, winter–spring SSB is 0.46–0.74 in 2005–2016 and falls to 0.27–0.37 in 2017–2020, when monthly apical F of the west fleet reaches 0.25–0.42. It is back to 0.58–0.60 in 2023–2025 (Figure 13). The rest of the decline to SSB/SSB0 ≈ 0.08 comes from recruitment at 15–20% of the Beverton–Holt expectation for the 2019–2025 spawners (Figure 6).
+3. **The recruitment deviations stand in for productivity.** JABBA's own process deviations are close to zero (Figure 3). The OM's persistent negative recruitment deviations are what reproduce, in a high-productivity squid model (h = 0.8, one-year life span), the low productivity JABBA estimates (r ≈ 0.6). Whether that low state is a recruitment regime or a property of the stock is not resolved by the data, and matters for projections.
+4. **The autumn cohort is lightly exploited.** SSB is 0.84–0.99 of dynamic unfished throughout, with monthly apical F of the east fleet at most 0.06 (Figures 13–14). Its recruitment deviations are close to zero.
+5. **Fishing mortality follows the shift in catch.** West-fleet F is highest in 2008 and 2017–2019 and close to zero in 2025, when the west catch was 0.5 kt. East-fleet F rises over 2017–2025 as the east catch grows (Figure 14).
+
+# Next steps
+
+* **Projection recruitment.** Projection deviations are currently generated internally (σ = 0.6, AC = 0.8 by month) around Beverton–Holt, so the winter–spring cohort would rebound quickly. Options are to carry the recent multiplier forward (e.g. the 2019–2025 mean), an AR(1) process fitted to the solved deviations, or reversion to the stock–recruit curve. These are alternative OMs.
+* **Index uncertainty.** WP07's winter–spring status depends strongly on the index: B2025/BMSY is 0.125 with the GAM index and 0.67–0.74 with the nominal and random-forest indices. Emulating those runs would give alternative OMs.
+* **JABBA inputs.** Replace the digitized autumn index with the tabulated values (`NFS_indices.xlsx`), and confirm WP07's catch series and observation-error settings to close the gap with the published fits (Table 2).
+* **Cohort mixing** across 170°E as a sensitivity.
+* **Monthly catch by area** to replace the assumed seasonal effort profiles.
+* **In-season MPs** (`Interval = 1`).
+
+# Appendix
+
+## Summaries
+
+```{r summaries-code, code = readLines("R/summaries.R"), eval = FALSE}
+```
+
+## Plotting functions
+
+```{r plots-code, code = readLines("R/plots.R"), eval = FALSE}
+```
+
+## Implementation notes
+
+* Built with slMSE 0.3.21 (commit 794a4e6) and MSEtool 4.0.0 (dev) under R 4.5.
+* These slMSE behaviours are worked around here rather than changed in the package:
+  * `slStock` line 121 assigns `Wt_age` to the local `Length` object after it has already been stored in the stock (line 115), so a supplied `Wt_age` is silently ignored and weight always comes from `a` and `b`. The intended line is `Weight@MeanAtAge = Wt_age`. This doesn't matter here, as `Wt_age` is not supplied.
+  * `slStock` cannot take per-simulation M (`rep(M, na)`); M is set after construction.
+  * `slFleet` fails on a user-supplied effort matrix, because `class(Effort) != "array"` has length 2 for a matrix. Effort is set after construction.
+* Stocks in the OM are named by `Stock@Name`, so they are indexed by position, not list name.

@@ -118,7 +118,7 @@ slStock = function(Name = "A short-lived creature", Species = "Shortus liveus", 
 
   Weight = new('weight')
   Weight@MeanAtAge = a * Length@MeanAtAge ^ b
-  if(!is.na(Wt_age[1]))  Length@MeanAtAge = Wt_age
+  if(!is.na(Wt_age[1]))  Weight@MeanAtAge = Wt_age
   Weight@Units = "g"
   Weight@Dist = "lognormal"
   Weight@TruncSD = 2

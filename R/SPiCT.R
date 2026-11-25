@@ -85,36 +85,36 @@ SPiCT_config = function(Sdata, r.pr=c(0.6,  0.2, 1), bk.pr=c(0.5,0.3,1),
 
 }
 
-getsval = function(fit, nam, ts=T){
+getsval = function(fit, nam, timestep, ts=T){
   temp = fit$value[names(fit$value)==nam]
-  if(ts){
-    if(length(temp) == length(fit$inp$time)){
-      keep = fit$inp$time %in% fit$inp$timeC
-      temp = temp[keep]
-      names(temp) = fit$inp$timeC
-    }else{
-      keep = 1:length(fit$inp$timeC)
-      temp = temp[keep]
-      names(temp) = fit$inp$timeC
-    }
+  if(timestep == "year") tslab = unique(floor(fit$inp$timeC))
+  if(timestep =="quarter"){
+    yrs = unique(floor(fit$inp$timeC))
+    ny = length(yrs)
+    tslab = rep(yrs,each=4) + rep(c(0,0.25,0.5,0.75),ny)
   }
+  if(ts){
+    keep = fit$inp$time %in% tslab
+    temp = temp[keep]
+    names(temp) = tslab
+   }
   temp
 }
 
-SPiCT_output = function(fit){
-  predts = fit$inp$time
-  BMSY = getsval(fit, "Bmsy",ts=F)
-  MSY = getsval(fit, "MSY",ts=F)
-  BMSY_B0 = exp(getsval(fit, "logBpK",ts=F))
-  Brel = exp(getsval(fit, nam = "logBBmsy"))
-  B = BMSY * Brel
-  C = exp(getsval(fit, nam = "logCpred"))
+SPiCT_output = function(fit,timestep){
+
+  BMSY = getsval(fit, "Bmsy",timestep,ts=F)
+  MSY = getsval(fit, "MSY",timestep,ts=F)
+  BMSY_B0 = exp(getsval(fit, "logBpK",timestep,ts=F))
+  ext = spict_extract(fit, resolution = timestep, bio_type = "mean")
+  B = ext$B
+  C = ext$C
   U = C/B
-  list(B = B, C = C, U = U, BMSY = BMSY, MSY = MSY, BMSY_B0 = BMSY_B0, predts = predts, fit=fit)
+  list(B = B, C = C, U = U, BMSY = BMSY, MSY = MSY, BMSY_B0 = BMSY_B0, predts = ext$time, fit=fit)
 }
 
 
-#  sim = 2; timestep="quarter"; r.pr = c(0.8,0.1,1); bk.pr = c(0.5,0.3,1);shape.pr = c(2, 0.001, 1);oe = c(0.5, 0.5, 1);pe = c(0.8,0.5,1);fdevs = c(4, 0.5, 1);ce = c(0.05, 0.001, 1);q.pr = NULL;timing = 0;dteuler = 0.05
+#  sim = 2; timestep="quarter"; r.pr = c(0.8,0.1,1); bk.pr = c(0.5,0.3,1);shape.pr = c(2, 0.001, 1);oe = c(0.5, 0.5, 1);pe = c(0.8,0.5,1);fdevs = c(4, 0.5, 1);ce = c(0.05, 0.001, 1);q.pr = NULL;timing = 0;dteuler = 1/24
 do_spict=function(sim, simdata, timestep = 'year',
                   r.pr = c(0.6,0.2,1),
                   bk.pr = c(0.5,0.3,1),
@@ -131,12 +131,12 @@ do_spict=function(sim, simdata, timestep = 'year',
   Sinput = SPiCT_config(Sdata, r.pr, bk.pr, shape.pr, oe, pe, fdevs, ce,  q.pr, timing, dteuler)
   ck = check.inp(Sinput)
   fit = fit.spict(Sinput)
-  SPiCT_output(fit)
+  SPiCT_output(fit, timestep)
 
 }
 
 
-#  timestep = "quarter"; parallel = T; r.pr = c(0.5,0.2,1); bk.pr = c(0.5,0.3,1);shape.pr = c(2, 0.001, 1);oe = c(0.2, 0.5, 1);pe = c(0.2,0.5,1);fdevs = c(4, 0.5, 1);ce = c(0.05, 0.001, 1);q.pr = NULL;timing = 0.625;dteuler = 0.25
+#  timestep = "quarter"; parallel = T; r.pr = c(0.5,0.2,1); bk.pr = c(0.5,0.3,1);shape.pr = c(2, 0.001, 1);oe = c(0.2, 0.5, 1);pe = c(0.2,0.5,1);fdevs = c(4, 0.5, 1);ce = c(0.05, 0.001, 1);q.pr = NULL;timing = 0.625;dteuler = 0.05
 
 
 SimSam_spict = function(simdata, timestep = "year", parallel =T,
@@ -150,6 +150,8 @@ SimSam_spict = function(simdata, timestep = "year", parallel =T,
                         q.pr = NULL,
                         timing = 0.625,
                         dteuler = 0.25){
+
+  nSim = dim(simdata$Landings)[1]
 
   if(parallel){
     setup()

@@ -1,7 +1,7 @@
 Package: slMSE
 Type: Package
 Title: Tools for Simulation Testing, Stock Assessment and MSE for Short-Lived Species.  
-Version: 0.3.21
+Version: 0.3.26
 Authors@R: c(
     person(
       "Tom", "Carruthers",
@@ -19,4 +19,4 @@ LazyData: true
 LazyLoad: true
 Depends:
   DT, openMSE, viridis
-RoxygenNote: 7.3.3
+Config/roxygen2/version: 8.1.0

@@ -138,6 +138,9 @@ SimSam_RCM = function(simdata, mode = "ASPM", parallel = T, Name = "An RCM OM w 
                       Steepness, SRrel = 2, pe = 5.0,  max_F = 3.0, # SRrel = 1 is B-H, SRrel = 2 is Ricker
                       proyears = 15, CurrentYear = 2026){
 
+
+  nSim = dim(simdata$Landings)[1]
+
   if(parallel){
     setup()
     sfLibrary(slMSE)

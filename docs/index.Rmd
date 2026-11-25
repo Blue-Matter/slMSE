@@ -84,6 +84,10 @@ pre { /* Code block */
 library(dplyr)
 library(kableExtra)
 library(readxl)
+library(snowfall)
+library(openMSE)
+library(spict)
+library(slMSE)
 
 knitr::opts_chunk$set(
   dpi = 300,            # High resolution for printing/displays
@@ -689,7 +693,145 @@ Coming soon!
 
 ## Neon Flying Squid
 
-TBD
+### Introduction
+
+Pacific Neon Flying Squid (NFS) ( *Ommastrephes* *bartramii*) have two sub-stocks, a winter-spring cohort that spaws from February to June and an Autumn cohort that spawns from September to March. Catches are typically characterized into those occuring west and east of the 170 degree (E) line, for which the large majority of catches are in the west. Stock assessments of NFS (NPFC-2026-SSC, NFS04-WP07) have been undertaken for each cohort using an annual Bayesisan surplus production model (JABBA, Winker et al. 2018). To test the appropriateness of various assessment approaches, including annual surplus production models, the existing JABBA assessments were combined in a monthly age structured operating model in openMSE using the slStock, slFleet and slOM functions of slMSE. 
+
+
+### Methods
+
+Each JABBA assessment (winter-spring, autumn) was rerun to obtain posterior estimates of stock bioimass and process errors. A mulistock, monthly operating model was build using slOM based by assuming monthly patterns in recruitment. The R0, recruitment deviations and annual exploitaiton rates were then optimized to match the catch and stock biomass estimated by the JABBA assessments. Here we assume that the JABBA trends, stock levels and exploitation rates are 'true' for the purposes of seeing whether assessments could retrieve these quantities. In other words we aim to address the question 'if our assessments were in fact true, can we expect to be able to assess this resource reliably and what type of assessment model performs the best'?
+
+All methodological steps are available in code in a detailed [R Markdown report](OMs/NeonFS_Monthly/NeonFS_Monthly_OM.html)
+
+The operating model was able to match, stock trend, magnitude and annual exploitation rate estimated by the JABBA assessments. 
+
+
+### Simulation Testing Stock Assessment Methods
+
+The list object produced in the detailed om specification script above includes a multistock operating model object of class 'om'. 
+
+Using the OpenMSE Simulate() function the historical simulation was spooled up and predicted data were generated for catches, indices and catch-length composition data. These datasets include two resolutions: data aggregated to year and data aggregated to quarter. 
+
+```{r NFS_monthly_sim, eval=T, echo = T, message = FALSE}
+
+NFS_m = readRDS("C:/GitHub/slMSE/docs/OMs/NeonFS_monthly/OMs/NFS_monthly_OM_jabba.rds")
+NFS_hist_m = Simulate(NFS_m$om)
+slplot(NFS_hist_m)
+NFS_simdata_m = slSimData(NFS_hist_m)                        # Extract simulated data
+slplot(NFS_simdata_m)                                  # plot simulated data
+
+```
+
+### Assessment Model Fitting
+
+Simulated data were used to fit quarterly and annual SPiCT and RCM models:
+
+```{r NFS_monthly_spict, eval=T, echo = T, message = FALSE}
+
+NFS_Spict_y = SimSam_spict(NFS_simdata_m, timestep = "year",   # annual sim sam
+                        parallel = T,                 # use parallel processing
+                        r.pr = c(0.8,0.2,1),          # r prior
+                        bk.pr = c(0.5,0.3,1),         # initial depletion prior
+                        shape.pr = c(2, 0.001, 1),    # shape prior (about 0.4)
+                        oe = c(0.2, 0.5, 1),          # Index observation error
+                        pe = c(0.5, 0.5, 1),          # process error
+                        fdevs = c(4, 0.5, 1),         # F deviation penalty
+                        ce = c(0.05, 0.001, 1),       # Catch obs error
+                        q.pr = NULL,                  # index q prior
+                        timing = 0.01,                # index timing (within ts)
+                        dteuler = 1/4)               # resolution of cont func.
+
+slplot(NFS_Spict_y)                                      # plot sim sam results
+
+
+
+SS_spict_q = SimSam_spict(NFS_simdata_m, timestep = "quarter",   # annual sim sam
+                        parallel = T,                 # use parallel processing
+                        r.pr = c(0.8,0.2,1),          # r prior
+                        bk.pr = c(0.5,0.3,1),         # initial depletion prior
+                        shape.pr = c(2, 0.001, 1),    # shape prior (about 0.4)
+                        oe = c(0.2, 0.5, 1),          # Index observation error
+                        pe = c(0.5, 0.5, 1),          # process error
+                        fdevs = c(4, 0.5, 1),         # F deviation penalty
+                        ce = c(0.05, 0.001, 1),       # Catch obs error
+                        q.pr = NULL,                  # index q prior
+                        timing = 0.01,                # index timing (within ts)
+                        dteuler = 1/24)               # resolution of cont func.
+
+slplot(SS_spict_q)                                      # plot sim sam results
+
+
+```
+
+```{r NFS_monthly_rcm, eval=T, echo = T, message = FALSE}
+
+NFS_Spict_y = SimSam_RCM(NFS_simdata_m, timestep = "year",   # annual sim sam
+                        parallel = T,                 # use parallel processing
+                        r.pr = c(0.8,0.2,1),          # r prior
+                        bk.pr = c(0.5,0.3,1),         # initial depletion prior
+                        shape.pr = c(2, 0.001, 1),    # shape prior (about 0.4)
+                        oe = c(0.2, 0.5, 1),          # Index observation error
+                        pe = c(0.5, 0.5, 1),          # process error
+                        fdevs = c(4, 0.5, 1),         # F deviation penalty
+                        ce = c(0.05, 0.001, 1),       # Catch obs error
+                        q.pr = NULL,                  # index q prior
+                        timing = 0.01,                # index timing (within ts)
+                        dteuler = 1/4)               # resolution of cont func.
+
+slplot(NFS_Spict_y)                                      # plot sim sam results
+
+
+
+SS_spict_q = SimSam_spict(NFS_simdata_m, timestep = "quarter",   # annual sim sam
+                        parallel = T,                 # use parallel processing
+                        r.pr = c(0.8,0.2,1),          # r prior
+                        bk.pr = c(0.5,0.3,1),         # initial depletion prior
+                        shape.pr = c(2, 0.001, 1),    # shape prior (about 0.4)
+                        oe = c(0.2, 0.5, 1),          # Index observation error
+                        pe = c(0.5, 0.5, 1),          # process error
+                        fdevs = c(4, 0.5, 1),         # F deviation penalty
+                        ce = c(0.05, 0.001, 1),       # Catch obs error
+                        q.pr = NULL,                  # index q prior
+                        timing = 0.01,                # index timing (within ts)
+                        dteuler = 1/24)               # resolution of cont func.
+
+slplot(SS_spict_q)                                      # plot sim sam results
+
+
+```
+
+
+```{r NFS_montly_spict_hidden}
+
+NFS_ASPM_q = SimSam_RCM(NFS_simdata_m, Name = "NFS monthly",
+                    mode = "ASPM",          # No length data, sel user specified
+                    c_oe = 0.05,            # Catch obs err (log normal sd)
+                    i_oe = 0.15,            # Index obs err 
+                    ESS = 50,               # Effective sample size length comps
+                    C_eq_fac = 1,           # Ratio for Initial Equilbrm. catch
+                    C_eq_nyrs = 5,          # Initial No.Equilibrium catch years
+                    nsubyr = 4,             # A quarterly model
+                    R0init = 1E7,           # Initial guess for unfished recrmt.
+                    M = 0.5,                # Quarterly nat. mort. rate. 
+                    Len_age = NA,           # These age vectors should be 
+                    Wt_age = NA,            #   be specified but when set to NA
+                    Mat_age = NA,           #   the mean across all simulations
+                    Sel_age = NA,           #   is used. 
+                    Steepness = 0.8,        # Steepness parameter - resilience
+                    SRrel = 2,              # Ricker stock rec rel. 1 is B-H
+                    pe = 5.0,               # Log sd penalty on rec devs (v low)
+                    max_F = 3.0)            # Maximum quarterly apical exp rate
+
+
+
+
+```
+
+###
+
+
+
 
 ## Jumbo Flying Squid
 
@@ -711,6 +853,7 @@ NPFC, 2025. NPFC-2025-SSC NFS02-WP02. Overview of Stock Assessment Methods and M
 
 NPFC, 2025. NPFC-2025-SSC NFS02-IP06Management Strategy Evaluation for Short-Lived Species with Only Annual Data: A Case Study of the Autumn Cohort of Neon Flying Squid in the North Pacific Ocean, https://www.npfc.int/system/files/2025-07/NPFC-2025-SSC%20NFS02-IP06%20Data%20moderate%20MSE%20for%20short-lived%20species.pdf
 
+Winker, H., Carvalho, F., & Kapur, M. (2018). JABBA: Just Another Bayesian Biomass Assessment. Fisheries Research, 204, 275–288.
 
 <br>
 
