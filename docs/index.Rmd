@@ -745,16 +745,18 @@ Pacific Neon Flying Squid (NFS) ( *Ommastrephes* *bartramii*) have two sub-stock
 
 Each JABBA assessment (winter-spring, autumn) was rerun to obtain posterior estimates of stock bioimass and process errors. A mulistock, monthly operating model was build using slOM based by assuming monthly patterns in recruitment. The R0, recruitment deviations and annual exploitaiton rates were then optimized to match the catch and stock biomass estimated by the JABBA assessments. Here we assume that the JABBA trends, stock levels and exploitation rates are 'true' for the purposes of seeing whether assessments could retrieve these quantities. In other words we aim to address the question 'if our assessments were in fact true, can we expect to be able to assess this resource reliably and what type of assessment model performs the best'?
 
-All methodological steps for specifying the operating model are available in code in a detailed [R Markdown report](OMs/NeonFS_Monthly/NeonFS_Monthly_OM.html)
+All methodological steps for specifying the operating model are available in code in a detailed [R Markdown report](docs/OMs/NeonFS_Monthly/NeonFS_Monthly_OM.html)
 
 The operating model was able to match stock trend, magnitude and annual exploitation rate estimated by the two cohort-specific JABBA assessments. 
 
 
 ### Simulation Testing Stock Assessment Methods
 
-The list object produced in the detailed om specification script above includes a multistock operating model object of class 'om'. 
+The list object produced in the [detailed OM specification script](docs/OMs/NeonFS_Monthly/NeonFS_Monthly_OM.html) above includes a multistock operating model object of class 'om'. 
 
 Using the OpenMSE Simulate() function the historical simulation was spooled up and predicted data were generated for catches, indices and catch-length composition data. These datasets include two resolutions: data aggregated to year and data aggregated to quarter. 
+
+A key finding of this exercise is that the JABBA assessment model for the Winter-Spring cohort estimated very low process errors and fitted the historical declines in the index due to fishing mortality rate. The production model estimated a mean FMSY of 0.297 for the winter-spring rebuild assessment configuration a very low rate for an annual species. When age-structured, semelparous dynamics are imposed in the operating models, fishing mortality rate cannot explain stock declines and these come only from recruitment deviations.
 
 ```{r NFS_monthly_sim, eval=T, echo = T, message = FALSE}
 
