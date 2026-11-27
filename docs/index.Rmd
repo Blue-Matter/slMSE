@@ -80,7 +80,9 @@ pre { /* Code block */
 
 ***
 
-```{r setup, include=FALSE}
+
+
+```{r setup1, include=FALSE}
 library(dplyr)
 library(kableExtra)
 library(readxl)
@@ -132,10 +134,24 @@ getprog<-function(page){
 }
   
 
-
-
 ```
 
+```{r load_Rmd_data, echo = F, eval = T}
+
+loadfiles <- function(folder, envir = parent.frame()) {
+  files <- list.files(folder, pattern = "\\.rds$", full.names = TRUE, ignore.case = TRUE)
+  if (length(files) == 0) {
+    message("No .rds files found in ", folder)
+    return(invisible(character(0)))
+  }
+  nams <- sub("\\.rds$", "", basename(files), ignore.case = TRUE)
+  for (i in seq_along(files)) assign(nams[i], readRDS(files[i]), envir = envir)
+  invisible(nams)
+}
+
+loadfiles("C:/Github/slMSE/docs/Rmd_data") # all the various objects pre computed 
+
+```
 
 # Overview
 
@@ -316,16 +332,7 @@ remotes::install_github("DTUAqua/spict/spict")                  # SPiCT assessme
 To run the following scripts you will need to load up the following packages:
 
 
-```{r packageload, eval=T,echo=F, results = 'hide', message=FALSE}
-library(openMSE)
-library(slMSE)
-library(spict)
-library(ggplot2)
-
-```
-
-
-```{r packageload2, eval=F,echo=T}
+```{r packageload, eval=F,echo=T}
 library(openMSE)
 library(slMSE)
 library(spict)
@@ -432,10 +439,14 @@ SPiCT is a surplus production model based on the generalized equations of Pella 
 
 Lets fit an annual SPiCT model to a single simulated dataset:
 
-```{r Spict_single, eval = T, echo=T}
+```{r Spict_single, eval = F, echo=T}
 Sout = do_spict(sim = 1, simdata)     # Fit spict (default settings) for sim 1
+```
+
+```{r Spict_single_plot, eval = T, echo=T}
 plot(Sout$fit)                        # Generic SPiCT fitting report
 ```
+
 
 If you take a look at the documentation for do_spict() you will see that a large number of default priors and other assumptions such as observation error and process error, were imposed on this fit. You can fiddle around with these if you like - maybe you can fit the simulated data better?
 
@@ -445,7 +456,7 @@ If you take a look at the documentation for do_spict() you will see that a large
 
 The focus of this package however is the simulation testing of assessment estimation performance. Let's do a full sim-sam (simulation - stock assessment model) for all 24 simulations and summarize the estimation performance:
 
-```{r Spict_SimSam, eval = T, echo = T, message = FALSE}
+```{r Spict_SimSam, eval = F, echo = T, message = FALSE}
 # Sim-Sam all simulations
 SS_spict = SimSam_spict(simdata, timestep = "year",   # annual sim sam
                         parallel = T,                 # use parallel processing
@@ -460,18 +471,22 @@ SS_spict = SimSam_spict(simdata, timestep = "year",   # annual sim sam
                         timing = 0.01,                # index timing (within ts)
                         dteuler = 0.25)               # resolution of cont func.
 
+
+```
+
+```{r Spict_SimSam_plot, eval = T, echo = T, message = FALSE}
 slplot(SS_spict)                                      # plot sim sam results
 ```
+
 
 That is the result for the annual model with the configuration (priors, errors etc) specified. 
 
 Lets try a quarterly assessment instead:
 
-```{r Spict_SimSam_q, eval = T, echo = T, message = FALSE}
+```{r Spict_SimSam_q, eval = F, echo = T, message = FALSE, warning = FALSE}
 # One simulation
 Sout_q = do_spict(sim = 1, simdata, timestep = "quarter", dteuler = 0.05)
-plot(Sout_q$fit)                                  # generic SPiCT fitting report
-
+ 
 # Sim-Sam all simulations
 SS_spict_q = SimSam_spict(simdata, timestep = "quarter",
                           parallel = T,               # use parallel processing
@@ -486,6 +501,14 @@ SS_spict_q = SimSam_spict(simdata, timestep = "quarter",
                           timing = 0.01,              # index timing (within ts)
                           dteuler = 0.25)             # resolution of cont func.
 
+
+```
+
+```{r Spict_SimSam_q_plot, eval = T, echo = T, message = FALSE}
+# One simulation
+plot(Sout_q$fit)                                  # generic SPiCT fitting report
+
+# Sim-Sam all simulations
 slplot(SS_spict_q)                                    # plot sim sam results
 
 ```
@@ -509,10 +532,14 @@ Let's see how these assessment models simulation test, starting with ASPM:
 ```{r RCM_ASPM, eval = F, echo = T}
 # One simulation
 Rout = do_RCM(1, simdata)   # fit RCM default args in ASPM model for sim 1
+```
+
+```{r RCM_ASPM_plot, eval = F, echo = T}
+# One simulation
 plot(Rout$fit)
 ```
 
-```{r RCM_ASPM2, eval = T, echo = T, message = FALSE}
+```{r RCM_ASPM2, eval = F, echo = T, message = FALSE}
 # Sim-Sam all simulations
 SS_RCM_ASPM = SimSam_RCM(simdata, Name = "JFS demo",
                     mode = "ASPM",          # No length data, sel user specified
@@ -533,8 +560,13 @@ SS_RCM_ASPM = SimSam_RCM(simdata, Name = "JFS demo",
                     pe = 5.0,               # Log sd penalty on rec devs (v low)
                     max_F = 3.0)            # Maximum quarterly apical exp rate
 
+```
+
+```{r RCM_ASPM2_plot, eval = T, echo = T, message = FALSE}
+# Sim-Sam all simulations
 slplot(SS_RCM_ASPM)
 ```
+
 
 Now SCAL:
 
@@ -543,7 +575,7 @@ Rout = do_RCM(1, simdata, mode = "SCAL") # fit RCM SCAL model for sim 1
 plot(Rout$fit)
 ```
 
-```{r RCM_SCAL2, echo=T, eval = T, message = FALSE}
+```{r RCM_SCAL2, echo=T, eval = F, message = FALSE}
 # Sim-Sam all simulations
 SS_RCM_SCAL = SimSam_RCM(simdata, Name = "JFS demo",
                          mode = "ASPM",    # Length data, Selectivity estimated
@@ -564,9 +596,15 @@ SS_RCM_SCAL = SimSam_RCM(simdata, Name = "JFS demo",
                          pe = 5.0,         # Log sd penalty on rec devs (v low)
                          max_F = 3.0)      # Maximum quarterly apical exp rate
 
+
+```
+
+```{r RCM_SCAL2_plot, echo=T, eval = T, message = FALSE}
+# Sim-Sam all simulations
 slplot(SS_RCM_SCAL)
 
 ```
+
 
 There are various ways to calibrate these models to better estimate the scale of the simulated stock. Key inputs to try adjusting are M, steepness and the index observation error (i_oe). In general, increasing steepness values and reducing index observation error will lead to the estimation of a smaller stock. 
 
@@ -584,7 +622,7 @@ It turns out this is straightforward because after estimation, RCM returns an co
 
 Normally we would be submitting real fishery data to the RCM. In lieu of those data, for the purposes of this demo RCM will be fitted to simulation 1 of the simulated data above:
 
-```{r RCM_cond_1, eval=T, echo=T, message = FALSE}
+```{r RCM_cond_1, eval=F, echo=T, message = FALSE}
 
 OM = RCM_data(1, simdata, "Fit to sim data in lieu of real data",
               M = 0.5,                # Quarterly natural mortality rate
@@ -592,6 +630,7 @@ OM = RCM_data(1, simdata, "Fit to sim data in lieu of real data",
               Steepness = 0.7,        # Assumed steepness of Ricker SRR
               i_oe  = 0.1,            # 10% CV on abundance indices
               ESS = 25,               # Effective Sample Size of 25 pa for Lcomp
+              proyears = 40,
               nSim = 16)              # Make OM 16 simulations big
 
 
@@ -648,7 +687,7 @@ plotGIR(Example_Data)
 
 Lets run the default GIR MP along with a version 'myGIR' that we have modified:
 
-```{r GIRMSE, eval=T, echo = T, message = FALSE}
+```{r GIRMSE, eval=F, echo = T, message = FALSE}
 myGIR= GIR                                # Copy Generic Index Ratio MP
 formals(myGIR)$HCR_ICP = c(0.5, 2)        # Below 50% historical index there is
 formals(myGIR)$HCR_LCP = c(0, 0.8)        #     zero catch, max catch 80% hist
@@ -657,10 +696,14 @@ formals(myGIR)$HCR_down_max = 0.5         # Maximum downward adjustment of 50%
 class(myGIR) = 'mp'                       # Assign correct class
 
 anMSE = Project(hist, c("GIR","myGIR"))   # Closed-loop projections
-slplot(anMSE)                             # MSE results
 
 ```
 
+
+```{r GIRMSE_plot, eval=T, echo = T, message = FALSE}
+slplot(anMSE)                             # MSE results
+
+```
 
 
 ## Specifying Robustness Operating Models
@@ -702,9 +745,9 @@ Pacific Neon Flying Squid (NFS) ( *Ommastrephes* *bartramii*) have two sub-stock
 
 Each JABBA assessment (winter-spring, autumn) was rerun to obtain posterior estimates of stock bioimass and process errors. A mulistock, monthly operating model was build using slOM based by assuming monthly patterns in recruitment. The R0, recruitment deviations and annual exploitaiton rates were then optimized to match the catch and stock biomass estimated by the JABBA assessments. Here we assume that the JABBA trends, stock levels and exploitation rates are 'true' for the purposes of seeing whether assessments could retrieve these quantities. In other words we aim to address the question 'if our assessments were in fact true, can we expect to be able to assess this resource reliably and what type of assessment model performs the best'?
 
-All methodological steps are available in code in a detailed [R Markdown report](OMs/NeonFS_Monthly/NeonFS_Monthly_OM.html)
+All methodological steps for specifying the operating model are available in code in a detailed [R Markdown report](OMs/NeonFS_Monthly/NeonFS_Monthly_OM.html)
 
-The operating model was able to match, stock trend, magnitude and annual exploitation rate estimated by the JABBA assessments. 
+The operating model was able to match stock trend, magnitude and annual exploitation rate estimated by the two cohort-specific JABBA assessments. 
 
 
 ### Simulation Testing Stock Assessment Methods
@@ -727,7 +770,7 @@ slplot(NFS_simdata_m)                                  # plot simulated data
 
 Simulated data were used to fit quarterly and annual SPiCT and RCM models:
 
-```{r NFS_monthly_spict, eval=T, echo = T, message = FALSE}
+```{r NFS_monthly_spict, eval=F, echo = T, message = FALSE}
 
 NFS_Spict_y = SimSam_spict(NFS_simdata_m, timestep = "year",   # annual sim sam
                         parallel = T,                 # use parallel processing
@@ -742,11 +785,8 @@ NFS_Spict_y = SimSam_spict(NFS_simdata_m, timestep = "year",   # annual sim sam
                         timing = 0.01,                # index timing (within ts)
                         dteuler = 1/4)               # resolution of cont func.
 
-slplot(NFS_Spict_y)                                      # plot sim sam results
 
-
-
-SS_spict_q = SimSam_spict(NFS_simdata_m, timestep = "quarter",   # annual sim sam
+NFS_spict_q = SimSam_spict(NFS_simdata_m, timestep = "quarter",   # annual sim sam
                         parallel = T,                 # use parallel processing
                         r.pr = c(0.8,0.2,1),          # r prior
                         bk.pr = c(0.5,0.3,1),         # initial depletion prior
@@ -759,72 +799,43 @@ SS_spict_q = SimSam_spict(NFS_simdata_m, timestep = "quarter",   # annual sim sa
                         timing = 0.01,                # index timing (within ts)
                         dteuler = 1/24)               # resolution of cont func.
 
-slplot(SS_spict_q)                                      # plot sim sam results
-
-
 ```
 
-```{r NFS_monthly_rcm, eval=T, echo = T, message = FALSE}
 
-NFS_Spict_y = SimSam_RCM(NFS_simdata_m, timestep = "year",   # annual sim sam
-                        parallel = T,                 # use parallel processing
-                        r.pr = c(0.8,0.2,1),          # r prior
-                        bk.pr = c(0.5,0.3,1),         # initial depletion prior
-                        shape.pr = c(2, 0.001, 1),    # shape prior (about 0.4)
-                        oe = c(0.2, 0.5, 1),          # Index observation error
-                        pe = c(0.5, 0.5, 1),          # process error
-                        fdevs = c(4, 0.5, 1),         # F deviation penalty
-                        ce = c(0.05, 0.001, 1),       # Catch obs error
-                        q.pr = NULL,                  # index q prior
-                        timing = 0.01,                # index timing (within ts)
-                        dteuler = 1/4)               # resolution of cont func.
-
+```{r NFS_monthly_spict_plot, eval=T, echo = T, message = FALSE}
 slplot(NFS_Spict_y)                                      # plot sim sam results
-
-
-
-SS_spict_q = SimSam_spict(NFS_simdata_m, timestep = "quarter",   # annual sim sam
-                        parallel = T,                 # use parallel processing
-                        r.pr = c(0.8,0.2,1),          # r prior
-                        bk.pr = c(0.5,0.3,1),         # initial depletion prior
-                        shape.pr = c(2, 0.001, 1),    # shape prior (about 0.4)
-                        oe = c(0.2, 0.5, 1),          # Index observation error
-                        pe = c(0.5, 0.5, 1),          # process error
-                        fdevs = c(4, 0.5, 1),         # F deviation penalty
-                        ce = c(0.05, 0.001, 1),       # Catch obs error
-                        q.pr = NULL,                  # index q prior
-                        timing = 0.01,                # index timing (within ts)
-                        dteuler = 1/24)               # resolution of cont func.
-
 slplot(SS_spict_q)                                      # plot sim sam results
-
 
 ```
 
 
-```{r NFS_montly_spict_hidden}
+
+```{r NFS_montly_ASPM, eval=F, echo = T, message = FALSE}
 
 NFS_ASPM_q = SimSam_RCM(NFS_simdata_m, Name = "NFS monthly",
-                    mode = "ASPM",          # No length data, sel user specified
-                    c_oe = 0.05,            # Catch obs err (log normal sd)
-                    i_oe = 0.15,            # Index obs err 
-                    ESS = 50,               # Effective sample size length comps
-                    C_eq_fac = 1,           # Ratio for Initial Equilbrm. catch
-                    C_eq_nyrs = 5,          # Initial No.Equilibrium catch years
-                    nsubyr = 4,             # A quarterly model
-                    R0init = 1E7,           # Initial guess for unfished recrmt.
-                    M = 0.5,                # Quarterly nat. mort. rate. 
-                    Len_age = NA,           # These age vectors should be 
-                    Wt_age = NA,            #   be specified but when set to NA
-                    Mat_age = NA,           #   the mean across all simulations
-                    Sel_age = NA,           #   is used. 
-                    Steepness = 0.8,        # Steepness parameter - resilience
-                    SRrel = 2,              # Ricker stock rec rel. 1 is B-H
-                    pe = 5.0,               # Log sd penalty on rec devs (v low)
-                    max_F = 3.0)            # Maximum quarterly apical exp rate
+                        mode = "ASPM",          # No length data, sel user specified
+                        c_oe = 0.05,            # Catch obs err (log normal sd)        !
+                        i_oe = 0.3,             # Index obs err                        !
+                        ESS = 50,               # Effective sample size length comps
+                        C_eq_fac = 1,           # Ratio for Initial Equilbrm. catch
+                        C_eq_nyrs = 5,          # Initial No.Equilibrium catch years
+                        nsubyr = 4,             # A quarterly model
+                        R0init = 4E8,           # Initial guess for unfished recrmt.
+                        M = 0.25,               # Quarterly nat. mort. rate. 
+                        Len_age = NA,           # These age vectors should be 
+                        Wt_age = NA,            #   be specified but when set to NA
+                        Mat_age = NA,           #   the mean across all simulations
+                        Sel_age = NA,           #   is used. 
+                        Steepness = 0.8,        # Steepness parameter - resilience
+                        SRrel = 1,              # Ricker stock rec rel. 1 is B-H
+                        pe = 0.6,               # Log sd penalty on rec devs (v low)  !
+                        max_F = 3.0)            # Maximum quarterly apical exp rate
+
+```
 
 
-
+```{r NFS_montly_ASPM_plot, eval=T, echo = T, message = FALSE}
+slplot(NFS_ASPM_q)                                      # plot sim sam results
 
 ```
 
